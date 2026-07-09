@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vocab Box — IELTS flashcards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EFEAD9;
+    --paper-dark:#E4DEC9;
+    --ink:#242420;
+    --ink-soft:#5B584C;
+    --navy:#2B3A4A;
+    --navy-soft:#5A6B7A;
+    --teal:#3F7568;
+    --teal-light:#DCE9E4;
+    --brick:#A24B36;
+    --brick-light:#F1DCD3;
+    --mustard:#C99A3E;
+    --mustard-light:#F3E6C7;
+    --bg:#182027;
+    --panel:#202A32;
+    --line:rgba(239,234,217,0.14);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--paper);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding:32px 16px 64px;
+    display:flex;
+    justify-content:center;
+  }
+  .app{ width:100%; max-width:520px; }
+  .title-row{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom:4px;
+  }
+  h1{
+    font-family:'Source Serif 4', serif;
+    font-weight:600;
+    font-size:26px;
+    margin:0;
+    letter-spacing:0.2px;
+  }
+  .subtitle{
+    color:var(--navy-soft);
+    font-size:13px;
+    margin:0 0 22px;
+  }
+  .drawers{
+    display:flex; gap:6px; margin-bottom:10px;
+  }
+  .drawer{
+    flex:1; background:var(--panel); border-radius:6px;
+    padding:8px 6px 7px; text-align:center;
+    border-bottom:3px solid var(--paper-dark);
+  }
+  .drawer .n{
+    font-family:'IBM Plex Mono', monospace; font-size:15px; font-weight:500;
+  }
+  .drawer .l{
+    font-size:10px; color:var(--navy-soft); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px;
+  }
+  .statline{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:13px; color:var(--navy-soft); margin-bottom:26px;
+  }
+  .statline .due{ color:var(--mustard); font-weight:500; }
+  .stage{
+    position:relative;
+    min-height:280px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    margin-bottom:18px;
+  }
+  .card{
+    width:100%;
+    background:var(--paper);
+    color:var(--ink);
+    border-radius:4px;
+    padding:0;
+    position:relative;
+    box-shadow:0 14px 0 -6px rgba(0,0,0,0.18);
+    cursor:pointer;
+    user-select:none;
+    transition:transform .18s ease, opacity .18s ease;
+  }
+  .card.leaving{
+    transform:translateX(120%) rotate(4deg);
+    opacity:0;
+  }
+  .card.entering{
+    animation:slideIn .22s ease;
+  }
+  @keyframes slideIn{
+    from{ transform:translateX(-40px); opacity:0; }
+    to{ transform:translateX(0); opacity:1; }
+  }
+  .holes{
+    display:flex; justify-content:space-between; padding:10px 14px 0;
+  }
+  .hole{
+    width:9px; height:9px; border-radius:50%; background:var(--bg);
+  }
+  .tab{
+    position:absolute; top:-12px; left:20px;
+    background:var(--navy); color:var(--paper);
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.6px;
+    padding:4px 10px; border-radius:3px 3px 0 0;
+  }
+  .card-body{
+    padding:44px 28px 30px;
+    text-align:center;
+    min-height:150px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  .word{
+    font-family:'Source Serif 4', serif;
+    font-size:30px;
+    font-weight:600;
+    line-height:1.25;
+  }
+  .divider{
+    width:36px; height:1px; background:var(--paper-dark); margin:18px 0;
+  }
+  .translation{
+    font-family:'Source Serif 4', serif;
+    font-size:24px;
+    color:var(--navy);
+  }
+  .hint{
+    font-size:12px; color:var(--ink-soft); margin-top:16px; letter-spacing:0.3px;
+  }
+  .rate-row{
+    display:flex; gap:10px; width:100%; margin-top:4px;
+  }
+  button{
+    font-family:'Inter',sans-serif;
+    border:none; border-radius:6px; cursor:pointer;
+    font-size:14px; font-weight:500;
+  }
+  .btn-again{
+    flex:1; padding:14px; background:var(--brick-light); color:var(--brick);
+  }
+  .btn-again:hover{ filter:brightness(0.96); }
+  .btn-good{
+    flex:1; padding:14px; background:var(--teal-light); color:var(--teal);
+  }
+  .btn-good:hover{ filter:brightness(0.96); }
+  .empty{
+    text-align:center; padding:50px 20px; color:var(--navy-soft);
+    background:var(--panel); border-radius:8px; width:100%;
+  }
+  .empty .big{ font-family:'Source Serif 4', serif; font-size:19px; color:var(--paper); margin-bottom:6px; }
+  .toggle-add{
+    width:100%; padding:12px; margin-top:6px;
+    background:transparent; border:1px solid var(--line); color:var(--paper);
+    border-radius:6px; font-size:13px;
+  }
+  .toggle-add:hover{ background:var(--panel); }
+  .add-panel{
+    margin-top:12px; background:var(--panel); border-radius:8px; padding:16px;
+    display:none;
+  }
+  .add-panel.open{ display:block; }
+  .add-panel p{ font-size:12px; color:var(--navy-soft); margin:0 0 10px; line-height:1.5; }
+  textarea{
+    width:100%; min-height:120px; background:var(--bg); color:var(--paper);
+    border:1px solid var(--line); border-radius:6px; padding:10px;
+    font-family:'IBM Plex Mono', monospace; font-size:12.5px; line-height:1.6;
+    resize:vertical;
+  }
+  .add-actions{
+    display:flex; justify-content:space-between; align-items:center; margin-top:10px;
+  }
+  .parse-msg{ font-size:12px; color:var(--mustard); }
+  .btn-parse{
+    padding:9px 16px; background:var(--mustard); color:var(--ink);
+  }
+  .btn-parse:hover{ filter:brightness(1.05); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="title-row">
+    <h1>Vocab Box</h1>
+  </div>
+  <p class="subtitle">IELTS vocabulary, filed by how well you know it</p>
+
+  <div class="drawers" id="drawers"></div>
+  <div class="statline">
+    <span id="totalline">0 cards</span>
+    <span class="due" id="dueline">0 due today</span>
+  </div>
+
+  <div class="stage" id="stage"></div>
+
+  <button class="toggle-add" id="toggleAdd">+ Add words</button>
+  <div class="add-panel" id="addPanel">
+    <p>Paste your list, one per line: number, word, em dash, translation.<br>Example — 1. obligingly — услужливо, охотно</p>
+    <textarea id="bulkInput" placeholder="1. obligingly — услужливо, охотно
+2. susceptible — восприимчивый, уязвимый"></textarea>
+    <div class="add-actions">
+      <span class="parse-msg" id="parseMsg"></span>
+      <button class="btn-parse" id="parseBtn">Add to box</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'ielts-vocab-cards';
+const DAY = 86400000;
+const INTERVAL_DAYS = {1:1, 2:2, 3:4, 4:7, 5:14};
+
+let cards = [];
+let queue = [];
+let current = null;
+let flipped = false;
+
+async function loadCards(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    cards = raw ? JSON.parse(raw) : [];
+  }catch(e){
+    cards = [];
+  }
+}
+
+async function saveCards(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cards));
+  }catch(e){
+    console.error('Storage error', e);
+  }
+}
+
+function parseBulk(text){
+  const lines = text.split('\n');
+  const re = /^\s*\d+[\.\)]?\s*(.+?)\s*[—–-]\s*(.+?)\s*$/;
+  let added = 0, updated = 0;
+  lines.forEach(line=>{
+    if(!line.trim()) return;
+    const m = line.match(re);
+    if(!m) return;
+    const word = m[1].trim();
+    const translation = m[2].trim();
+    if(!word || !translation) return;
+    const existing = cards.find(c => c.word.toLowerCase() === word.toLowerCase());
+    if(existing){
+      existing.translation = translation;
+      updated++;
+    } else {
+      cards.push({
+        id: Date.now() + '-' + Math.random().toString(36).slice(2,8),
+        word, translation,
+        box: 1,
+        due: Date.now()
+      });
+      added++;
+    }
+  });
+  return {added, updated};
+}
+
+function dueCards(){
+  const now = Date.now();
+  return cards.filter(c => c.due <= now);
+}
+
+function buildQueue(){
+  queue = dueCards().sort(()=>Math.random()-0.5);
+}
+
+function renderStats(){
+  const counts = [0,0,0,0,0,0];
+  cards.forEach(c => counts[c.box]++);
+  const drawers = document.getElementById('drawers');
+  drawers.innerHTML = '';
+  for(let i=1;i<=5;i++){
+    const d = document.createElement('div');
+    d.className = 'drawer';
+    d.innerHTML = '<div class="n">'+counts[i]+'</div><div class="l">box '+i+'</div>';
+    drawers.appendChild(d);
+  }
+  document.getElementById('totalline').textContent = cards.length + (cards.length===1?' card':' cards');
+  document.getElementById('dueline').textContent = dueCards().length + ' due today';
+}
+
+function renderCard(animateIn){
+  const stage = document.getElementById('stage');
+  stage.innerHTML = '';
+
+  if(!current){
+    if(queue.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      const total = cards.length;
+      empty.innerHTML = total === 0
+        ? '<div class="big">Your box is empty</div>Add your vocab list below to start reviewing.'
+        : '<div class="big">All done for now</div>Nothing left due today. Come back tomorrow, or add more words.';
+      stage.appendChild(empty);
+      return;
+    }
+    current = queue.shift();
+    flipped = false;
+  }
+
+  const card = document.createElement('div');
+  card.className = 'card' + (animateIn ? ' entering' : '');
+  card.innerHTML =
+    '<div class="tab">BOX ' + current.box + '</div>' +
+    '<div class="holes"><div class="hole"></div><div class="hole"></div></div>' +
+    '<div class="card-body" id="cardBody"></div>';
+  stage.appendChild(card);
+
+  const body = card.querySelector('#cardBody');
+  renderCardBody(body);
+
+  card.addEventListener('click', (e)=>{
+    if(e.target.closest('button')) return;
+    if(!flipped){
+      flipped = true;
+      renderCardBody(body);
+      showRateButtons();
+    }
+  });
+}
+
+function renderCardBody(body){
+  if(!flipped){
+    body.innerHTML =
+      '<div class="word">' + escapeHtml(current.word) + '</div>' +
+      '<div class="hint">Tap to reveal translation</div>';
+  } else {
+    body.innerHTML =
+      '<div class="word">' + escapeHtml(current.word) + '</div>' +
+      '<div class="divider"></div>' +
+      '<div class="translation">' + escapeHtml(current.translation) + '</div>';
+  }
+}
+
+function showRateButtons(){
+  const stage = document.getElementById('stage');
+  const row = document.createElement('div');
+  row.className = 'rate-row';
+  row.innerHTML =
+    '<button class="btn-again" id="btnAgain">Again</button>' +
+    '<button class="btn-good" id="btnGood">Good</button>';
+  stage.appendChild(row);
+  document.getElementById('btnAgain').addEventListener('click', ()=>rate(false));
+  document.getElementById('btnGood').addEventListener('click', ()=>rate(true));
+}
+
+async function rate(good){
+  const card = current;
+  const stage = document.getElementById('stage');
+  const cardEl = stage.querySelector('.card');
+  if(cardEl) cardEl.classList.add('leaving');
+
+  if(good){
+    card.box = Math.min(card.box + 1, 5);
+    card.due = Date.now() + INTERVAL_DAYS[card.box] * DAY;
+  } else {
+    card.box = 1;
+    card.due = Date.now();
+    const pos = Math.min(queue.length, 2);
+    queue.splice(pos, 0, card);
+  }
+
+  await saveCards();
+  renderStats();
+
+  current = null;
+  setTimeout(()=>renderCard(true), 160);
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+document.getElementById('toggleAdd').addEventListener('click', ()=>{
+  document.getElementById('addPanel').classList.toggle('open');
+});
+
+document.getElementById('parseBtn').addEventListener('click', async ()=>{
+  const text = document.getElementById('bulkInput').value;
+  const {added, updated} = parseBulk(text);
+  await saveCards();
+  document.getElementById('bulkInput').value = '';
+  const msg = document.getElementById('parseMsg');
+  if(added === 0 && updated === 0){
+    msg.textContent = 'No lines matched. Check the format.';
+  } else {
+    msg.textContent = added + ' added' + (updated ? ', ' + updated + ' updated' : '');
+    setTimeout(()=>{ msg.textContent = ''; }, 4000);
+  }
+  buildQueue();
+  renderStats();
+  current = null;
+  renderCard(false);
+});
+
+async function init(){
+  await loadCards();
+  buildQueue();
+  renderStats();
+  renderCard(false);
+}
+
+init();
+</script>
+</body>
+</html>

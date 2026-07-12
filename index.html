@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vocab Box — IELTS flashcards</title>
+<title>Vocab Box — spaced-repetition flashcards</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
@@ -14,31 +14,47 @@
     --ink:#242420;
     --ink-soft:#5B584C;
     --navy:#2B3A4A;
-    --navy-soft:#5A6B7A;
+    --soft:#8A97A3;
     --teal:#3F7568;
     --teal-light:#DCE9E4;
     --brick:#A24B36;
     --brick-light:#F1DCD3;
-    --mustard:#C99A3E;
-    --mustard-light:#F3E6C7;
+    --accent:#C99A3E;
     --bg:#182027;
     --panel:#202A32;
     --line:rgba(239,234,217,0.14);
+    --card-bg:#EFEAD9;
+    --card-ink:#242420;
+    --card-ink-soft:#5B584C;
+    --card-trans:#2B3A4A;
+    --card-divider:rgba(0,0,0,0.12);
+    --card-input-bg:rgba(255,255,255,0.55);
   }
   *{box-sizing:border-box;}
   body{
     margin:0;
-    background:var(--bg);
+    background-color:var(--bg);
+    background-size:cover;
+    background-position:center;
+    background-attachment:fixed;
     color:var(--paper);
     font-family:'Inter',sans-serif;
     min-height:100vh;
     padding:32px 16px 64px;
     display:flex;
     justify-content:center;
+    transition:background-color .3s ease;
   }
-  .app{ width:100%; max-width:520px; }
+  body.has-image::before{
+    content:'';
+    position:fixed; inset:0;
+    background:rgba(14,18,22,0.55);
+    z-index:0;
+    pointer-events:none;
+  }
+  .app{ width:100%; max-width:520px; position:relative; z-index:1; }
   .title-row{
-    display:flex; align-items:baseline; justify-content:space-between;
+    display:flex; align-items:center; justify-content:space-between;
     margin-bottom:4px;
   }
   h1{
@@ -48,30 +64,52 @@
     margin:0;
     letter-spacing:0.2px;
   }
-  .subtitle{
-    color:var(--navy-soft);
-    font-size:13px;
-    margin:0 0 22px;
+  .header-btns{ display:flex; gap:8px; }
+  .icon-btn{
+    background:var(--panel); border:1px solid var(--line); color:var(--paper);
+    width:38px; height:38px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    padding:0;
   }
+  .icon-btn:hover{ filter:brightness(1.15); }
+  .icon-btn svg{ width:19px; height:19px; }
+  .subtitle{
+    color:var(--soft);
+    font-size:13px;
+    margin:0 0 16px;
+    text-shadow:0 1px 2px rgba(0,0,0,0.3);
+  }
+  .mode-chips{
+    display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap;
+  }
+  .chip{
+    padding:7px 13px; border-radius:20px; font-size:12px;
+    background:var(--panel); border:1px solid var(--line); color:var(--soft);
+    font-family:'Inter',sans-serif;
+  }
+  .chip.on{ color:var(--accent); border-color:var(--accent); }
+  .chip:hover{ filter:brightness(1.15); }
   .drawers{
     display:flex; gap:6px; margin-bottom:10px;
   }
   .drawer{
     flex:1; background:var(--panel); border-radius:6px;
     padding:8px 6px 7px; text-align:center;
-    border-bottom:3px solid var(--paper-dark);
+    border-bottom:3px solid var(--accent);
+    transition:background-color .3s ease, border-color .3s ease;
   }
   .drawer .n{
     font-family:'IBM Plex Mono', monospace; font-size:15px; font-weight:500;
   }
   .drawer .l{
-    font-size:10px; color:var(--navy-soft); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px;
+    font-size:10px; color:var(--soft); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px;
   }
   .statline{
     display:flex; justify-content:space-between; align-items:center;
-    font-size:13px; color:var(--navy-soft); margin-bottom:26px;
+    font-size:13px; color:var(--soft); margin-bottom:26px;
+    text-shadow:0 1px 2px rgba(0,0,0,0.3);
   }
-  .statline .due{ color:var(--mustard); font-weight:500; }
+  .statline .due{ color:var(--accent); font-weight:500; }
   .stage{
     position:relative;
     min-height:280px;
@@ -80,15 +118,15 @@
   }
   .card{
     width:100%;
-    background:var(--paper);
-    color:var(--ink);
+    background:var(--card-bg);
+    color:var(--card-ink);
     border-radius:4px;
     padding:0;
     position:relative;
     box-shadow:0 14px 0 -6px rgba(0,0,0,0.18);
     cursor:pointer;
     user-select:none;
-    transition:transform .18s ease, opacity .18s ease;
+    transition:transform .18s ease, opacity .18s ease, background-color .3s ease, color .3s ease;
   }
   .card.leaving{
     transform:translateX(120%) rotate(4deg);
@@ -101,11 +139,30 @@
     from{ transform:translateX(-40px); opacity:0; }
     to{ transform:translateX(0); opacity:1; }
   }
+  body.card-has-image .card{
+    background-image:var(--card-image);
+    background-size:cover;
+    background-position:center;
+  }
+  body.card-has-image .card::before{
+    content:'';
+    position:absolute; inset:0;
+    background:rgba(10,12,16,0.48);
+    border-radius:4px;
+    z-index:0;
+  }
+  .card .tab, .card .speak-btn, .card .holes, .card .card-body{
+    position:relative; z-index:1;
+  }
+  .card .tab, .card .speak-btn{ z-index:2; }
+  .card .tab{ position:absolute; }
+  .card .speak-btn{ position:absolute; }
   .holes{
     display:flex; justify-content:space-between; padding:10px 14px 0;
   }
   .hole{
     width:9px; height:9px; border-radius:50%; background:var(--bg);
+    transition:background-color .3s ease;
   }
   .tab{
     position:absolute; top:-12px; left:20px;
@@ -113,6 +170,16 @@
     font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.6px;
     padding:4px 10px; border-radius:3px 3px 0 0;
   }
+  .tab.practice{ background:var(--teal); }
+  .speak-btn{
+    position:absolute; top:12px; right:14px;
+    background:transparent; border:none; color:var(--card-ink-soft);
+    padding:6px; border-radius:6px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .speak-btn:hover{ background:rgba(128,128,128,0.15); color:var(--card-ink); }
+  .speak-btn.speaking{ color:var(--accent); }
+  .speak-btn svg{ width:20px; height:20px; }
   .card-body{
     padding:44px 28px 30px;
     text-align:center;
@@ -126,15 +193,34 @@
     line-height:1.25;
   }
   .divider{
-    width:36px; height:1px; background:var(--paper-dark); margin:18px 0;
+    width:36px; height:1px; background:var(--card-divider); margin:18px 0;
   }
   .translation{
     font-family:'Source Serif 4', serif;
     font-size:24px;
-    color:var(--navy);
+    color:var(--card-trans);
   }
   .hint{
-    font-size:12px; color:var(--ink-soft); margin-top:16px; letter-spacing:0.3px;
+    font-size:12px; color:var(--card-ink-soft); margin-top:16px; letter-spacing:0.3px;
+  }
+  .feedback{
+    font-size:13px; font-weight:500; margin-top:14px; letter-spacing:0.2px;
+  }
+  .feedback.right{ color:var(--teal); }
+  .feedback.wrong{ color:var(--brick); }
+  .type-row{
+    display:flex; gap:8px; margin-top:20px; width:100%;
+  }
+  .type-input{
+    flex:1; padding:12px; border-radius:6px; border:1px solid var(--card-divider);
+    background:var(--card-input-bg); color:var(--card-ink);
+    font-family:'Inter',sans-serif; font-size:15px;
+    min-width:0;
+  }
+  .type-input::placeholder{ color:var(--card-ink-soft); opacity:0.7; }
+  .type-input:focus{ outline:2px solid var(--card-trans); }
+  .btn-check{
+    padding:12px 18px; background:var(--navy); color:var(--paper);
   }
   .rate-row{
     display:flex; gap:10px; width:100%; margin-top:4px;
@@ -153,24 +239,32 @@
   }
   .btn-good:hover{ filter:brightness(0.96); }
   .empty{
-    text-align:center; padding:50px 20px; color:var(--navy-soft);
+    text-align:center; padding:50px 20px; color:var(--soft);
     background:var(--panel); border-radius:8px; width:100%;
+    transition:background-color .3s ease;
   }
   .empty .big{ font-family:'Source Serif 4', serif; font-size:19px; color:var(--paper); margin-bottom:6px; }
+  .btn-practice{
+    margin-top:16px; padding:11px 22px;
+    background:transparent; border:1px solid var(--accent); color:var(--accent);
+    font-size:13px;
+  }
+  .btn-practice:hover{ background:rgba(255,255,255,0.05); }
   .toggle-add{
     width:100%; padding:12px; margin-top:6px;
     background:transparent; border:1px solid var(--line); color:var(--paper);
     border-radius:6px; font-size:13px;
   }
   .toggle-add:hover{ background:var(--panel); }
-  .add-panel{
+  .add-panel, .theme-panel, .stats-panel{
     margin-top:12px; background:var(--panel); border-radius:8px; padding:16px;
     display:none;
+    transition:background-color .3s ease;
   }
-  .add-panel.open{ display:block; }
-  .add-panel p{ font-size:12px; color:var(--navy-soft); margin:0 0 10px; line-height:1.5; }
+  .add-panel.open, .theme-panel.open, .stats-panel.open{ display:block; }
+  .add-panel p, .theme-panel p{ font-size:12px; color:var(--soft); margin:0 0 10px; line-height:1.5; }
   textarea{
-    width:100%; min-height:120px; background:var(--bg); color:var(--paper);
+    width:100%; min-height:120px; background:rgba(0,0,0,0.28); color:var(--paper);
     border:1px solid var(--line); border-radius:6px; padding:10px;
     font-family:'IBM Plex Mono', monospace; font-size:12.5px; line-height:1.6;
     resize:vertical;
@@ -178,19 +272,118 @@
   .add-actions{
     display:flex; justify-content:space-between; align-items:center; margin-top:10px;
   }
-  .parse-msg{ font-size:12px; color:var(--mustard); }
+  .parse-msg{ font-size:12px; color:var(--accent); }
   .btn-parse{
-    padding:9px 16px; background:var(--mustard); color:var(--ink);
+    padding:9px 16px; background:var(--accent); color:var(--ink);
   }
   .btn-parse:hover{ filter:brightness(1.05); }
+  .swatches{
+    display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-bottom:12px;
+  }
+  .swatch{
+    height:52px; border-radius:8px; cursor:pointer;
+    border:2px solid transparent;
+    position:relative;
+    overflow:hidden;
+  }
+  .swatch .accent-strip{
+    position:absolute; bottom:0; left:0; right:0; height:5px;
+  }
+  .swatch.active{ border-color:var(--paper); }
+  .swatch span{
+    position:absolute; bottom:9px; left:0; right:0;
+    font-size:9px; text-align:center; letter-spacing:0.4px;
+    color:rgba(255,255,255,0.85); text-transform:uppercase;
+    text-shadow:0 1px 2px rgba(0,0,0,0.6);
+  }
+  .theme-upload-row{
+    display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+  }
+  .btn-secondary{
+    padding:9px 14px; background:transparent; border:1px solid var(--line); color:var(--paper);
+    font-size:13px;
+  }
+  .btn-secondary:hover{ background:rgba(0,0,0,0.2); }
+  .btn-muted{
+    padding:9px 14px; background:transparent; border:1px solid var(--line); color:var(--soft);
+    font-size:13px;
+  }
+  #bgFile, #importFile{ display:none; }
+  .stats-grid{
+    display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; margin-bottom:14px;
+  }
+  .stat-tile{
+    background:rgba(0,0,0,0.22); border-radius:8px; padding:14px 12px; text-align:center;
+  }
+  .stat-tile .v{
+    font-family:'IBM Plex Mono', monospace; font-size:22px; font-weight:500;
+  }
+  .stat-tile .v.hl{ color:var(--accent); }
+  .stat-tile .k{
+    font-size:10.5px; color:var(--soft); text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;
+  }
+  .backup-row{
+    display:flex; gap:8px; flex-wrap:wrap;
+  }
+  .backup-msg{ font-size:12px; color:var(--accent); margin-top:8px; min-height:16px; }
 </style>
 </head>
 <body>
 <div class="app">
   <div class="title-row">
     <h1>Vocab Box</h1>
+    <div class="header-btns">
+      <button class="icon-btn" id="statsBtn" title="Stats" aria-label="Stats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="5" y1="20" x2="5" y2="12"/><line x1="12" y1="20" x2="12" y2="6"/><line x1="19" y1="20" x2="19" y2="10"/></svg>
+      </button>
+      <button class="icon-btn" id="themeBtn" title="Appearance" aria-label="Appearance">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 1 0-18c4.97 0 9 3.58 9 8 0 1.66-1.34 3-3 3h-2.2c-1 0-1.8.8-1.8 1.8 0 .45.17.86.44 1.18.28.33.46.74.46 1.22A1.8 1.8 0 0 1 13.1 21H12z"/><circle cx="7.5" cy="10.5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="7.5" r="1" fill="currentColor" stroke="none"/><circle cx="16.5" cy="10.5" r="1" fill="currentColor" stroke="none"/></svg>
+      </button>
+    </div>
   </div>
-  <p class="subtitle">IELTS vocabulary, filed by how well you know it</p>
+  <p class="subtitle">Flashcards filed by how well you know them <span style="opacity:0.45;font-size:11px;">· v1.5</span></p>
+
+  <div class="mode-chips">
+    <button class="chip" id="dirChip">Direction: word → translation</button>
+    <button class="chip" id="typeChip">Typing: off</button>
+    <button class="chip" id="voiceChip">Voice: American</button>
+  </div>
+
+  <div class="stats-panel" id="statsPanel">
+    <div class="stats-grid">
+      <div class="stat-tile"><div class="v hl" id="stStreak">0</div><div class="k">day streak</div></div>
+      <div class="stat-tile"><div class="v" id="stToday">0</div><div class="k">reviews today</div></div>
+      <div class="stat-tile"><div class="v" id="stWeek">0</div><div class="k">this week</div></div>
+      <div class="stat-tile"><div class="v" id="stTotal">0</div><div class="k">all time</div></div>
+      <div class="stat-tile"><div class="v" id="stMastered">0</div><div class="k">mastered (box 5)</div></div>
+      <div class="stat-tile"><div class="v" id="stCards">0</div><div class="k">total cards</div></div>
+    </div>
+    <div class="backup-row">
+      <button class="btn-secondary" id="exportBtn">Export backup</button>
+      <button class="btn-secondary" id="importBtn">Import</button>
+      <input type="file" id="importFile" accept=".json,application/json">
+    </div>
+    <div class="backup-msg" id="backupMsg"></div>
+  </div>
+
+  <div class="theme-panel" id="themePanel">
+    <p>Background — pick a theme, or upload your own image.</p>
+    <div class="swatches" id="swatches"></div>
+    <div class="theme-upload-row" style="margin-bottom:18px;">
+      <button class="btn-secondary" id="uploadBtn">Upload image</button>
+      <input type="file" id="bgFile" accept="image/*">
+    </div>
+    <p>Card color — pick one, choose your own, or use a photo.</p>
+    <div class="swatches" id="cardSwatches"></div>
+    <div class="theme-upload-row">
+      <label class="btn-secondary" for="cardColorInput" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;">
+        Custom color <input type="color" id="cardColorInput" value="#EFEAD9" style="width:26px;height:26px;border:none;padding:0;background:none;cursor:pointer;">
+      </label>
+      <button class="btn-secondary" id="cardUploadBtn">Upload image</button>
+      <button class="btn-muted" id="clearBgBtn">Reset all</button>
+      <input type="file" id="cardBgFile" accept="image/*" style="display:none;">
+    </div>
+  </div>
 
   <div class="drawers" id="drawers"></div>
   <div class="statline">
@@ -213,30 +406,359 @@
 </div>
 
 <script>
-const STORAGE_KEY = 'ielts-vocab-cards';
+const STORAGE_KEY = 'vocab-box-cards';
+const LEGACY_KEY = 'ielts-vocab-cards';
+const THEME_KEY = 'vocab-box-theme';
+const BG_IMAGE_KEY = 'vocab-box-bg-image';
+const SETTINGS_KEY = 'vocab-box-settings';
+const ACTIVITY_KEY = 'vocab-box-activity';
+const CARD_KEY = 'vocab-box-card-color';
+const CARD_IMAGE_KEY = 'vocab-box-card-image';
 const DAY = 86400000;
 const INTERVAL_DAYS = {1:1, 2:2, 3:4, 4:7, 5:14};
+
+const THEMES = [
+  {id:'slate',  label:'Slate',  bg:'#182027', panel:'#202A32', accent:'#C99A3E'},
+  {id:'night',  label:'Night',  bg:'#101014', panel:'#1A1A22', accent:'#8B7FD4'},
+  {id:'forest', label:'Forest', bg:'#16241C', panel:'#1F3028', accent:'#7FB069'},
+  {id:'plum',   label:'Plum',   bg:'#221826', panel:'#2E2134', accent:'#D48FB8'},
+  {id:'sand',   label:'Sand',   bg:'#4A4030', panel:'#584D3B', accent:'#E8C468'},
+  {id:'ocean',  label:'Ocean',  bg:'#132836', panel:'#1C3544', accent:'#5FB3CE'},
+  {id:'wine',   label:'Wine',   bg:'#2E161B', panel:'#3C2027', accent:'#E0868E'},
+  {id:'coal',   label:'Coal',   bg:'#1E1E1E', panel:'#292929', accent:'#B8B8B8'}
+];
+
+const CARD_COLORS = [
+  {id:'#EFEAD9', label:'Paper'},
+  {id:'#F7F7F5', label:'Snow'},
+  {id:'#DCE9E1', label:'Mint'},
+  {id:'#D8E5EF', label:'Sky'},
+  {id:'#F1DEDE', label:'Rose'},
+  {id:'#E6DEEF', label:'Lilac'},
+  {id:'#2A2A28', label:'Charcoal'},
+  {id:'#1D2430', label:'Ink'}
+];
+
+const SPEAKER_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>';
 
 let cards = [];
 let queue = [];
 let current = null;
 let flipped = false;
+let practiceMode = false;
+let answered = false;
+let lastAnswerCorrect = null;
+let settings = { direction:'normal', typing:false, voice:'en-US' };
+let activity = {};
 
-async function loadCards(){
+function loadAll(){
   try{
-    const raw = localStorage.getItem(STORAGE_KEY);
+    let raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw){
+      raw = localStorage.getItem(LEGACY_KEY);
+      if(raw){ localStorage.setItem(STORAGE_KEY, raw); }
+    }
     cards = raw ? JSON.parse(raw) : [];
-  }catch(e){
-    cards = [];
-  }
+  }catch(e){ cards = []; }
+  try{
+    const s = localStorage.getItem(SETTINGS_KEY);
+    if(s) settings = Object.assign(settings, JSON.parse(s));
+  }catch(e){}
+  try{
+    const a = localStorage.getItem(ACTIVITY_KEY);
+    if(a) activity = JSON.parse(a);
+  }catch(e){ activity = {}; }
 }
 
-async function saveCards(){
-  try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cards));
-  }catch(e){
-    console.error('Storage error', e);
+function saveCards(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(cards)); }
+  catch(e){ console.error('Storage error', e); }
+}
+function saveSettings(){
+  try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }catch(e){}
+}
+function saveActivity(){
+  try{ localStorage.setItem(ACTIVITY_KEY, JSON.stringify(activity)); }catch(e){}
+}
+
+function todayKey(offsetDays){
+  const d = new Date(Date.now() - (offsetDays||0)*DAY);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function logReview(){
+  const k = todayKey(0);
+  activity[k] = (activity[k]||0) + 1;
+  saveActivity();
+}
+
+function computeStreak(){
+  let streak = 0;
+  let offset = activity[todayKey(0)] ? 0 : 1;
+  while(activity[todayKey(offset)]){
+    streak++;
+    offset++;
   }
+  return streak;
+}
+
+function renderStatsPanel(){
+  const total = Object.values(activity).reduce((a,b)=>a+b,0);
+  let week = 0;
+  for(let i=0;i<7;i++){ week += activity[todayKey(i)]||0; }
+  document.getElementById('stStreak').textContent = computeStreak();
+  document.getElementById('stToday').textContent = activity[todayKey(0)]||0;
+  document.getElementById('stWeek').textContent = week;
+  document.getElementById('stTotal').textContent = total;
+  document.getElementById('stMastered').textContent = cards.filter(c=>c.box===5).length;
+  document.getElementById('stCards').textContent = cards.length;
+}
+
+function applyTheme(){
+  const themeId = localStorage.getItem(THEME_KEY) || 'slate';
+  const bgImage = localStorage.getItem(BG_IMAGE_KEY);
+  const theme = THEMES.find(t=>t.id===themeId) || THEMES[0];
+  const root = document.documentElement.style;
+  root.setProperty('--bg', theme.bg);
+  root.setProperty('--panel', theme.panel);
+  root.setProperty('--accent', theme.accent);
+  if(bgImage){
+    document.body.style.backgroundImage = 'url(' + bgImage + ')';
+    document.body.classList.add('has-image');
+  } else {
+    document.body.style.backgroundImage = 'none';
+    document.body.classList.remove('has-image');
+  }
+  document.querySelectorAll('.swatch').forEach(s=>{
+    s.classList.toggle('active', s.dataset.theme === themeId && !bgImage);
+  });
+}
+
+function luminance(hex){
+  const h = hex.replace('#','');
+  const r = parseInt(h.substr(0,2),16);
+  const g = parseInt(h.substr(2,2),16);
+  const b = parseInt(h.substr(4,2),16);
+  return (0.299*r + 0.587*g + 0.114*b) / 255;
+}
+
+function applyCardColor(){
+  const hex = localStorage.getItem(CARD_KEY) || '#EFEAD9';
+  const cardImage = localStorage.getItem(CARD_IMAGE_KEY);
+  const root = document.documentElement.style;
+  root.setProperty('--card-bg', hex);
+  if(cardImage){
+    root.setProperty('--card-image', 'url(' + cardImage + ')');
+    document.body.classList.add('card-has-image');
+  } else {
+    root.setProperty('--card-image', 'none');
+    document.body.classList.remove('card-has-image');
+  }
+  const isLight = !cardImage && luminance(hex) > 0.55;
+  if(isLight){
+    root.setProperty('--card-ink', '#242420');
+    root.setProperty('--card-ink-soft', '#5B584C');
+    root.setProperty('--card-trans', '#2B3A4A');
+    root.setProperty('--card-divider', 'rgba(0,0,0,0.14)');
+    root.setProperty('--card-input-bg', 'rgba(255,255,255,0.55)');
+  } else {
+    root.setProperty('--card-ink', '#EFEAD9');
+    root.setProperty('--card-ink-soft', 'rgba(239,234,217,0.6)');
+    root.setProperty('--card-trans', '#A9C4DA');
+    root.setProperty('--card-divider', 'rgba(255,255,255,0.2)');
+    root.setProperty('--card-input-bg', 'rgba(0,0,0,0.28)');
+  }
+  document.querySelectorAll('#cardSwatches .swatch').forEach(s=>{
+    s.classList.toggle('active', s.dataset.card === hex && !cardImage);
+  });
+  const picker = document.getElementById('cardColorInput');
+  if(picker) picker.value = hex;
+}
+
+function renderCardSwatches(){
+  const wrap = document.getElementById('cardSwatches');
+  wrap.innerHTML = '';
+  CARD_COLORS.forEach(c=>{
+    const s = document.createElement('div');
+    s.className = 'swatch';
+    s.dataset.card = c.id;
+    s.style.background = c.id;
+    const labelColor = luminance(c.id) > 0.55 ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.85)';
+    s.innerHTML = '<span style="color:' + labelColor + ';text-shadow:none;bottom:50%;transform:translateY(50%);">' + c.label + '</span>';
+    s.addEventListener('click', ()=>{
+      localStorage.setItem(CARD_KEY, c.id);
+      localStorage.removeItem(CARD_IMAGE_KEY);
+      applyCardColor();
+    });
+    wrap.appendChild(s);
+  });
+}
+
+function renderSwatches(){
+  const wrap = document.getElementById('swatches');
+  wrap.innerHTML = '';
+  THEMES.forEach(t=>{
+    const s = document.createElement('div');
+    s.className = 'swatch';
+    s.dataset.theme = t.id;
+    s.style.background = t.bg;
+    s.innerHTML = '<span>' + t.label + '</span><div class="accent-strip" style="background:' + t.accent + '"></div>';
+    s.addEventListener('click', ()=>{
+      localStorage.setItem(THEME_KEY, t.id);
+      localStorage.removeItem(BG_IMAGE_KEY);
+      applyTheme();
+    });
+    wrap.appendChild(s);
+  });
+}
+
+function handleImageUpload(file){
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const maxW = 1600;
+      const scale = Math.min(1, maxW / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      try{
+        localStorage.setItem(BG_IMAGE_KEY, dataUrl);
+        applyTheme();
+      }catch(err){
+        alert('That image is too large to save. Try a smaller one.');
+      }
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleCardImageUpload(file){
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const maxW = 1000;
+      const scale = Math.min(1, maxW / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      try{
+        localStorage.setItem(CARD_IMAGE_KEY, dataUrl);
+        applyCardColor();
+      }catch(err){
+        alert('That image is too large to save. Try a smaller one.');
+      }
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+let voiceList = [];
+function refreshVoices(){
+  if(!('speechSynthesis' in window)) return;
+  voiceList = window.speechSynthesis.getVoices();
+}
+if('speechSynthesis' in window){
+  refreshVoices();
+  window.speechSynthesis.onvoiceschanged = refreshVoices;
+}
+
+function speak(text, btn){
+  if(!('speechSynthesis' in window)) return;
+  const synth = window.speechSynthesis;
+  if(voiceList.length === 0) refreshVoices();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = settings.voice;
+  u.rate = 0.9;
+  const want = settings.voice.toLowerCase();
+  const match =
+    voiceList.find(v => (v.lang||'').replace('_','-').toLowerCase() === want) ||
+    voiceList.find(v => (v.lang||'').replace('_','-').toLowerCase().startsWith(want));
+  if(match) u.voice = match;
+  if(btn){
+    btn.classList.add('speaking');
+    u.onend = ()=>btn.classList.remove('speaking');
+    u.onerror = ()=>btn.classList.remove('speaking');
+  }
+  if(synth.speaking || synth.pending) synth.cancel();
+  synth.resume();
+  synth.speak(u);
+}
+
+function exportBackup(){
+  const data = {
+    app:'vocab-box', version:1,
+    exportedAt:new Date().toISOString(),
+    cards, activity
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'vocab-box-backup-' + todayKey(0) + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  setBackupMsg('Backup downloaded.');
+}
+
+function importBackup(file){
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!data || !Array.isArray(data.cards)) throw new Error('bad format');
+      let added = 0, updated = 0;
+      data.cards.forEach(imp=>{
+        if(!imp.word || !imp.translation) return;
+        const existing = cards.find(c => c.word.toLowerCase() === imp.word.toLowerCase());
+        if(existing){
+          if((imp.box||1) > existing.box){
+            existing.box = imp.box;
+            existing.due = imp.due || Date.now();
+            updated++;
+          }
+        } else {
+          cards.push({
+            id: imp.id || (Date.now() + '-' + Math.random().toString(36).slice(2,8)),
+            word: imp.word,
+            translation: imp.translation,
+            box: Math.min(Math.max(imp.box||1,1),5),
+            due: imp.due || Date.now()
+          });
+          added++;
+        }
+      });
+      if(data.activity && typeof data.activity === 'object'){
+        Object.keys(data.activity).forEach(k=>{
+          activity[k] = Math.max(activity[k]||0, data.activity[k]);
+        });
+        saveActivity();
+      }
+      saveCards();
+      buildQueue();
+      renderStats();
+      renderStatsPanel();
+      current = null;
+      practiceMode = false;
+      renderCard(false);
+      setBackupMsg(added + ' added' + (updated ? ', ' + updated + ' progressed' : '') + '.');
+    }catch(err){
+      setBackupMsg('Could not read that file. Is it a Vocab Box backup?');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function setBackupMsg(text){
+  const el = document.getElementById('backupMsg');
+  el.textContent = text;
+  setTimeout(()=>{ if(el.textContent===text) el.textContent=''; }, 5000);
 }
 
 function parseBulk(text){
@@ -274,6 +796,14 @@ function dueCards(){
 
 function buildQueue(){
   queue = dueCards().sort(()=>Math.random()-0.5);
+  practiceMode = false;
+}
+
+function startPractice(){
+  queue = cards.slice().sort(()=>Math.random()-0.5);
+  practiceMode = true;
+  current = null;
+  renderCard(true);
 }
 
 function renderStats(){
@@ -291,29 +821,51 @@ function renderStats(){
   document.getElementById('dueline').textContent = dueCards().length + ' due today';
 }
 
+function frontText(c){ return settings.direction === 'normal' ? c.word : c.translation; }
+function backText(c){ return settings.direction === 'normal' ? c.translation : c.word; }
+
+function answerVariants(c){
+  return backText(c).split(/[,;\/]/).map(v=>v.trim().toLowerCase()).filter(Boolean);
+}
+
+function checkAnswer(input, c){
+  const val = input.trim().toLowerCase();
+  if(!val) return false;
+  return answerVariants(c).some(v => v === val);
+}
+
 function renderCard(animateIn){
   const stage = document.getElementById('stage');
   stage.innerHTML = '';
 
   if(!current){
     if(queue.length === 0){
+      practiceMode = false;
       const empty = document.createElement('div');
       empty.className = 'empty';
       const total = cards.length;
-      empty.innerHTML = total === 0
-        ? '<div class="big">Your box is empty</div>Add your vocab list below to start reviewing.'
-        : '<div class="big">All done for now</div>Nothing left due today. Come back tomorrow, or add more words.';
+      if(total === 0){
+        empty.innerHTML = '<div class="big">Your box is empty</div>Add a word list below to start reviewing.';
+      } else {
+        empty.innerHTML = '<div class="big">All done for now</div>Nothing left due today. Come back tomorrow, or keep going without affecting your boxes.<br><button class="btn-practice" id="practiceBtn">Practice anyway</button>';
+      }
       stage.appendChild(empty);
+      const pb = document.getElementById('practiceBtn');
+      if(pb) pb.addEventListener('click', startPractice);
       return;
     }
     current = queue.shift();
     flipped = false;
+    answered = false;
+    lastAnswerCorrect = null;
   }
 
   const card = document.createElement('div');
   card.className = 'card' + (animateIn ? ' entering' : '');
+  const showSpeaker = settings.direction === 'normal' || flipped;
   card.innerHTML =
-    '<div class="tab">BOX ' + current.box + '</div>' +
+    '<div class="tab' + (practiceMode ? ' practice' : '') + '">' + (practiceMode ? 'PRACTICE' : 'BOX ' + current.box) + '</div>' +
+    (showSpeaker ? '<button class="speak-btn" id="speakBtn" title="Pronounce" aria-label="Pronounce">' + SPEAKER_SVG + '</button>' : '') +
     '<div class="holes"><div class="hole"></div><div class="hole"></div></div>' +
     '<div class="card-body" id="cardBody"></div>';
   stage.appendChild(card);
@@ -321,31 +873,68 @@ function renderCard(animateIn){
   const body = card.querySelector('#cardBody');
   renderCardBody(body);
 
+  const sb = card.querySelector('#speakBtn');
+  if(sb) sb.addEventListener('click', ()=>{ speak(current.word, sb); });
+
   card.addEventListener('click', (e)=>{
-    if(e.target.closest('button')) return;
+    if(e.target.closest('button') || e.target.closest('input')) return;
     if(!flipped){
-      flipped = true;
-      renderCardBody(body);
-      showRateButtons();
+      flip();
     }
   });
+
+  if(settings.typing && !flipped){
+    const inp = card.querySelector('#typeInput');
+    if(inp){
+      inp.focus();
+      inp.addEventListener('keydown', (e)=>{
+        if(e.key === 'Enter') submitTyped();
+      });
+      card.querySelector('#checkBtn').addEventListener('click', submitTyped);
+    }
+  }
+
+  if(flipped) showRateButtons();
+}
+
+function flip(){
+  flipped = true;
+  renderCard(false);
+}
+
+function submitTyped(){
+  const inp = document.getElementById('typeInput');
+  if(!inp) return;
+  answered = true;
+  lastAnswerCorrect = checkAnswer(inp.value, current);
+  flip();
 }
 
 function renderCardBody(body){
   if(!flipped){
-    body.innerHTML =
-      '<div class="word">' + escapeHtml(current.word) + '</div>' +
-      '<div class="hint">Tap to reveal translation</div>';
+    let html = '<div class="word">' + escapeHtml(frontText(current)) + '</div>';
+    if(settings.typing){
+      html += '<div class="type-row"><input class="type-input" id="typeInput" type="text" placeholder="Type the answer" autocomplete="off" autocapitalize="off"><button class="btn-check" id="checkBtn">Check</button></div>';
+      html += '<div class="hint">Or tap the card to reveal</div>';
+    } else {
+      html += '<div class="hint">Tap to reveal</div>';
+    }
+    body.innerHTML = html;
   } else {
-    body.innerHTML =
-      '<div class="word">' + escapeHtml(current.word) + '</div>' +
+    let html =
+      '<div class="word">' + escapeHtml(frontText(current)) + '</div>' +
       '<div class="divider"></div>' +
-      '<div class="translation">' + escapeHtml(current.translation) + '</div>';
+      '<div class="translation">' + escapeHtml(backText(current)) + '</div>';
+    if(answered && lastAnswerCorrect !== null){
+      html += '<div class="feedback ' + (lastAnswerCorrect ? 'right">Correct' : 'wrong">Not quite') + '</div>';
+    }
+    body.innerHTML = html;
   }
 }
 
 function showRateButtons(){
   const stage = document.getElementById('stage');
+  if(stage.querySelector('.rate-row')) return;
   const row = document.createElement('div');
   row.className = 'rate-row';
   row.innerHTML =
@@ -356,24 +945,31 @@ function showRateButtons(){
   document.getElementById('btnGood').addEventListener('click', ()=>rate(true));
 }
 
-async function rate(good){
+function rate(good){
   const card = current;
   const stage = document.getElementById('stage');
   const cardEl = stage.querySelector('.card');
   if(cardEl) cardEl.classList.add('leaving');
 
-  if(good){
-    card.box = Math.min(card.box + 1, 5);
-    card.due = Date.now() + INTERVAL_DAYS[card.box] * DAY;
-  } else {
-    card.box = 1;
-    card.due = Date.now();
+  if(!practiceMode){
+    if(good){
+      card.box = Math.min(card.box + 1, 5);
+      card.due = Date.now() + INTERVAL_DAYS[card.box] * DAY;
+    } else {
+      card.box = 1;
+      card.due = Date.now();
+      const pos = Math.min(queue.length, 2);
+      queue.splice(pos, 0, card);
+    }
+    saveCards();
+  } else if(!good){
     const pos = Math.min(queue.length, 2);
     queue.splice(pos, 0, card);
   }
 
-  await saveCards();
+  logReview();
   renderStats();
+  renderStatsPanel();
 
   current = null;
   setTimeout(()=>renderCard(true), 160);
@@ -385,14 +981,106 @@ function escapeHtml(str){
   return div.innerHTML;
 }
 
+function renderChips(){
+  const dir = document.getElementById('dirChip');
+  dir.textContent = settings.direction === 'normal' ? 'Direction: word → translation' : 'Direction: translation → word';
+  dir.classList.toggle('on', settings.direction === 'reverse');
+  const typ = document.getElementById('typeChip');
+  typ.textContent = 'Typing: ' + (settings.typing ? 'on' : 'off');
+  typ.classList.toggle('on', settings.typing);
+  const vc = document.getElementById('voiceChip');
+  vc.textContent = 'Voice: ' + (settings.voice === 'en-GB' ? 'British' : 'American');
+  vc.classList.toggle('on', settings.voice === 'en-GB');
+}
+
+document.getElementById('dirChip').addEventListener('click', ()=>{
+  settings.direction = settings.direction === 'normal' ? 'reverse' : 'normal';
+  saveSettings();
+  renderChips();
+  flipped = false; answered = false; lastAnswerCorrect = null;
+  renderCard(false);
+});
+
+document.getElementById('typeChip').addEventListener('click', ()=>{
+  settings.typing = !settings.typing;
+  saveSettings();
+  renderChips();
+  flipped = false; answered = false; lastAnswerCorrect = null;
+  renderCard(false);
+});
+
 document.getElementById('toggleAdd').addEventListener('click', ()=>{
   document.getElementById('addPanel').classList.toggle('open');
 });
 
-document.getElementById('parseBtn').addEventListener('click', async ()=>{
+document.getElementById('themeBtn').addEventListener('click', ()=>{
+  document.getElementById('themePanel').classList.toggle('open');
+  document.getElementById('statsPanel').classList.remove('open');
+});
+
+document.getElementById('statsBtn').addEventListener('click', ()=>{
+  renderStatsPanel();
+  document.getElementById('statsPanel').classList.toggle('open');
+  document.getElementById('themePanel').classList.remove('open');
+});
+
+document.getElementById('uploadBtn').addEventListener('click', ()=>{
+  document.getElementById('bgFile').click();
+});
+
+document.getElementById('bgFile').addEventListener('change', (e)=>{
+  if(e.target.files && e.target.files[0]){
+    handleImageUpload(e.target.files[0]);
+  }
+});
+
+document.getElementById('voiceChip').addEventListener('click', ()=>{
+  settings.voice = settings.voice === 'en-US' ? 'en-GB' : 'en-US';
+  saveSettings();
+  renderChips();
+});
+
+document.getElementById('cardUploadBtn').addEventListener('click', ()=>{
+  document.getElementById('cardBgFile').click();
+});
+
+document.getElementById('cardBgFile').addEventListener('change', (e)=>{
+  if(e.target.files && e.target.files[0]){
+    handleCardImageUpload(e.target.files[0]);
+    e.target.value = '';
+  }
+});
+
+document.getElementById('clearBgBtn').addEventListener('click', ()=>{
+  localStorage.removeItem(BG_IMAGE_KEY);
+  localStorage.setItem(THEME_KEY, 'slate');
+  localStorage.removeItem(CARD_KEY);
+  localStorage.removeItem(CARD_IMAGE_KEY);
+  applyTheme();
+  applyCardColor();
+});
+
+document.getElementById('cardColorInput').addEventListener('input', (e)=>{
+  localStorage.setItem(CARD_KEY, e.target.value);
+  localStorage.removeItem(CARD_IMAGE_KEY);
+  applyCardColor();
+});
+
+document.getElementById('exportBtn').addEventListener('click', exportBackup);
+document.getElementById('importBtn').addEventListener('click', ()=>{
+  document.getElementById('importFile').click();
+});
+document.getElementById('importFile').addEventListener('change', (e)=>{
+  if(e.target.files && e.target.files[0]){
+    importBackup(e.target.files[0]);
+    e.target.value = '';
+  }
+});
+
+document.getElementById('parseBtn').addEventListener('click', ()=>{
   const text = document.getElementById('bulkInput').value;
   const {added, updated} = parseBulk(text);
-  await saveCards();
+  saveCards();
   document.getElementById('bulkInput').value = '';
   const msg = document.getElementById('parseMsg');
   if(added === 0 && updated === 0){
@@ -407,10 +1095,16 @@ document.getElementById('parseBtn').addEventListener('click', async ()=>{
   renderCard(false);
 });
 
-async function init(){
-  await loadCards();
+function init(){
+  loadAll();
+  renderSwatches();
+  renderCardSwatches();
+  applyTheme();
+  applyCardColor();
+  renderChips();
   buildQueue();
   renderStats();
+  renderStatsPanel();
   renderCard(false);
 }
 

@@ -277,6 +277,53 @@
     padding:9px 16px; background:var(--accent); color:var(--ink);
   }
   .btn-parse:hover{ filter:brightness(1.05); }
+  .word-list-head{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-top:18px; padding-top:14px; border-top:1px solid var(--line);
+  }
+  .word-list-head h3{
+    margin:0; font-size:13px; font-weight:600; letter-spacing:0.2px;
+  }
+  .word-filter{
+    background:rgba(0,0,0,0.28); color:var(--paper);
+    border:1px solid var(--line); border-radius:6px; padding:7px 10px;
+    font-family:'Inter',sans-serif; font-size:12.5px; width:150px;
+  }
+  .word-list{
+    margin-top:10px; max-height:260px; overflow-y:auto;
+  }
+  .word-row{
+    display:flex; align-items:center; gap:10px;
+    padding:8px 4px; border-bottom:1px solid var(--line);
+    font-size:13px;
+  }
+  .word-row:last-child{ border-bottom:none; }
+  .word-row .w{ font-weight:500; }
+  .word-row .t{ color:var(--soft); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .word-row .b{
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--accent);
+    flex-shrink:0;
+  }
+  .word-row .del{
+    background:transparent; border:none; color:var(--soft);
+    font-size:16px; line-height:1; padding:4px 8px; flex-shrink:0;
+  }
+  .word-row .del:hover{ color:var(--brick, #E0868E); }
+  .word-list-empty{ font-size:12.5px; color:var(--soft); padding:10px 4px; }
+  .undo-row{
+    margin-top:10px; padding:9px 12px; border-radius:6px;
+    background:rgba(0,0,0,0.25); font-size:12.5px; color:var(--soft);
+  }
+  .undo-btn{
+    background:transparent; border:none; color:var(--accent);
+    font-size:12.5px; font-weight:600; padding:0 2px; text-decoration:underline;
+  }
+  .btn-sample{
+    margin-top:10px; padding:11px 22px;
+    background:var(--accent); color:var(--ink);
+    font-size:13px;
+  }
+  .btn-sample:hover{ filter:brightness(1.05); }
   .swatches{
     display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-bottom:12px;
   }
@@ -341,7 +388,7 @@
       </button>
     </div>
   </div>
-  <p class="subtitle">Flashcards filed by how well you know them <span style="opacity:0.45;font-size:11px;">· v1.6</span></p>
+  <p class="subtitle">Flashcards filed by how well you know them <span style="opacity:0.45;font-size:11px;">· v1.8</span></p>
 
   <div class="mode-chips">
     <button class="chip" id="dirChip">Direction: word → translation</button>
@@ -393,15 +440,22 @@
 
   <div class="stage" id="stage"></div>
 
-  <button class="toggle-add" id="toggleAdd">+ Add words</button>
+  <button class="toggle-add" id="toggleAdd">+ Add / manage words</button>
   <div class="add-panel" id="addPanel">
-    <p>Paste your list, one per line: number, word, em dash, translation.<br>Example — 1. obligingly — услужливо, охотно</p>
-    <textarea id="bulkInput" placeholder="1. obligingly — услужливо, охотно
-2. susceptible — восприимчивый, уязвимый"></textarea>
+    <p>Paste your list, one per line: word, dash, translation. Numbers are optional.<br>Example — reside — проживать</p>
+    <textarea id="bulkInput" placeholder="reside — проживать
+remote — отдалённый
+isolation — изоляция"></textarea>
     <div class="add-actions">
       <span class="parse-msg" id="parseMsg"></span>
       <button class="btn-parse" id="parseBtn">Add to box</button>
     </div>
+    <div class="word-list-head">
+      <h3>Your words (<span id="wordCount">0</span>)</h3>
+      <input class="word-filter" id="wordFilter" type="text" placeholder="Filter…">
+    </div>
+    <div class="undo-row" id="undoRow" style="display:none;"></div>
+    <div class="word-list" id="wordList"></div>
   </div>
 </div>
 
@@ -761,13 +815,20 @@ function setBackupMsg(text){
   setTimeout(()=>{ if(el.textContent===text) el.textContent=''; }, 5000);
 }
 
+function parseLine(line){
+  // Prefer em/en dash as the separator (hyphens can appear inside words like "well-known")
+  let m = line.match(/^\s*(?:\d+[\.\)]?\s*)?(.+?)\s*[—–]\s*(.+?)\s*$/);
+  // Fall back to a hyphen only when it has spaces around it
+  if(!m) m = line.match(/^\s*(?:\d+[\.\)]?\s*)?(.+?)\s+-\s+(.+?)\s*$/);
+  return m;
+}
+
 function parseBulk(text){
   const lines = text.split('\n');
-  const re = /^\s*\d+[\.\)]?\s*(.+?)\s*[—–-]\s*(.+?)\s*$/;
   let added = 0, updated = 0;
   lines.forEach(line=>{
     if(!line.trim()) return;
-    const m = line.match(re);
+    const m = parseLine(line);
     if(!m) return;
     const word = m[1].trim();
     const translation = m[2].trim();
@@ -787,6 +848,105 @@ function parseBulk(text){
     }
   });
   return {added, updated};
+}
+
+const SAMPLE_DECK = [
+  ['abundant','обильный'],['deteriorate','ухудшаться'],['feasible','осуществимый'],
+  ['inevitably','неизбежно'],['scrutinize','тщательно изучать'],['ambiguous','двусмысленный'],
+  ['diligent','усердный'],['profound','глубокий'],['reluctant','неохотный'],
+  ['thrive','процветать'],['viable','жизнеспособный'],['coherent','связный'],
+  ['deliberately','намеренно'],['fluctuate','колебаться'],['substantial','существенный'],
+  ['compelling','убедительный'],['hinder','препятствовать'],['notion','понятие'],
+  ['resilient','устойчивый'],['versatile','универсальный']
+];
+
+function loadSampleDeck(){
+  SAMPLE_DECK.forEach(([word, translation])=>{
+    if(cards.find(c => c.word.toLowerCase() === word.toLowerCase())) return;
+    cards.push({
+      id: Date.now() + '-' + Math.random().toString(36).slice(2,8),
+      word, translation, box:1, due: Date.now()
+    });
+  });
+  saveCards();
+  buildQueue();
+  renderStats();
+  renderStatsPanel();
+  renderWordList();
+  current = null;
+  renderCard(true);
+}
+
+let lastDeleted = null;
+let undoTimer = null;
+
+function deleteWord(id){
+  const card = cards.find(c => c.id === id);
+  if(!card) return;
+  lastDeleted = card;
+  cards = cards.filter(c => c.id !== id);
+  queue = queue.filter(c => c.id !== id);
+  if(current && current.id === id){
+    current = null;
+    renderCard(false);
+  }
+  saveCards();
+  renderStats();
+  renderStatsPanel();
+  renderWordList();
+  showUndo(card.word);
+}
+
+function showUndo(word){
+  const bar = document.getElementById('undoRow');
+  bar.innerHTML = 'Deleted "' + escapeHtml(word) + '" — <button class="undo-btn" id="undoBtn">Undo</button>';
+  bar.style.display = 'block';
+  document.getElementById('undoBtn').addEventListener('click', undoDelete);
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(()=>{
+    bar.style.display = 'none';
+    lastDeleted = null;
+  }, 7000);
+}
+
+function undoDelete(){
+  if(!lastDeleted) return;
+  cards.push(lastDeleted);
+  lastDeleted = null;
+  clearTimeout(undoTimer);
+  document.getElementById('undoRow').style.display = 'none';
+  saveCards();
+  buildQueue();
+  renderStats();
+  renderStatsPanel();
+  renderWordList();
+  if(!current) renderCard(false);
+}
+
+function renderWordList(){
+  const wrap = document.getElementById('wordList');
+  const filter = (document.getElementById('wordFilter').value || '').trim().toLowerCase();
+  document.getElementById('wordCount').textContent = cards.length;
+  wrap.innerHTML = '';
+  const shown = cards
+    .filter(c => !filter || c.word.toLowerCase().includes(filter) || c.translation.toLowerCase().includes(filter))
+    .slice()
+    .reverse();
+  if(shown.length === 0){
+    wrap.innerHTML = '<div class="word-list-empty">' + (cards.length === 0 ? 'No words yet.' : 'Nothing matches that filter.') + '</div>';
+    return;
+  }
+  shown.forEach(c=>{
+    const row = document.createElement('div');
+    row.className = 'word-row';
+    row.innerHTML =
+      '<span class="w">' + escapeHtml(c.word) + '</span>' +
+      '<span class="t">' + escapeHtml(c.translation) + '</span>' +
+      '<span class="b">B' + c.box + '</span>' +
+      '<button class="del" title="Delete" aria-label="Delete">×</button>';
+    row.querySelector('.del').addEventListener('click', ()=>deleteWord(c.id));
+    wrap.appendChild(row);
+  });
 }
 
 function dueCards(){
@@ -845,13 +1005,15 @@ function renderCard(animateIn){
       empty.className = 'empty';
       const total = cards.length;
       if(total === 0){
-        empty.innerHTML = '<div class="big">Your box is empty</div>Add a word list below to start reviewing.';
+        empty.innerHTML = '<div class="big">Your box is empty</div>Add your own word list below, or start with a ready-made one.<br><button class="btn-sample" id="sampleBtn">Try a sample deck (20 words)</button>';
       } else {
         empty.innerHTML = '<div class="big">All done for now</div>Nothing left due today. Come back tomorrow, or keep going without affecting your boxes.<br><button class="btn-practice" id="practiceBtn">Practice anyway</button>';
       }
       stage.appendChild(empty);
       const pb = document.getElementById('practiceBtn');
       if(pb) pb.addEventListener('click', startPractice);
+      const smp = document.getElementById('sampleBtn');
+      if(smp) smp.addEventListener('click', loadSampleDeck);
       return;
     }
     current = queue.shift();
@@ -1011,7 +1173,10 @@ document.getElementById('typeChip').addEventListener('click', ()=>{
 
 document.getElementById('toggleAdd').addEventListener('click', ()=>{
   document.getElementById('addPanel').classList.toggle('open');
+  renderWordList();
 });
+
+document.getElementById('wordFilter').addEventListener('input', renderWordList);
 
 document.getElementById('themeBtn').addEventListener('click', ()=>{
   document.getElementById('themePanel').classList.toggle('open');
@@ -1091,6 +1256,7 @@ document.getElementById('parseBtn').addEventListener('click', ()=>{
   }
   buildQueue();
   renderStats();
+  renderWordList();
   current = null;
   renderCard(false);
 });

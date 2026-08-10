@@ -306,11 +306,14 @@
   .word-row:last-child{ border-bottom:none; }
   .word-row .w{ font-weight:500; }
   .word-row .t{ color:var(--soft); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .word-row .b{
-    font-family:'IBM Plex Mono', monospace; font-size:9.5px; color:var(--accent);
+  .word-row .box-select{
+    font-family:'IBM Plex Mono', monospace; font-size:10px; color:var(--accent);
     text-transform:uppercase; letter-spacing:0.5px;
-    flex-shrink:0;
+    background:rgba(0,0,0,0.25); border:1px solid var(--line); border-radius:5px;
+    padding:4px 6px; flex-shrink:0; cursor:pointer;
+    -webkit-appearance:none; appearance:none;
   }
+  .word-row .box-select:hover{ border-color:var(--accent); }
   .word-row .del{
     background:transparent; border:none; color:var(--soft);
     font-size:16px; line-height:1; padding:4px 8px; flex-shrink:0;
@@ -401,7 +404,7 @@
       </button>
     </div>
   </div>
-  <p class="subtitle">Flashcards filed by how well you know them <span style="opacity:0.45;font-size:11px;">· v1.9</span></p>
+  <p class="subtitle">Flashcards filed by how well you know them <span style="opacity:0.45;font-size:11px;">· v2.0</span></p>
 
   <div class="mode-chips">
     <button class="chip" id="dirChip">Direction: word → translation</button>
@@ -894,6 +897,19 @@ function loadSampleDeck(){
 let lastDeleted = null;
 let undoTimer = null;
 
+function moveWord(id, box){
+  const card = cards.find(c => c.id === id);
+  if(!card) return;
+  card.box = Math.min(Math.max(box,1),5);
+  card.due = Date.now();
+  saveCards();
+  buildQueue();
+  renderStats();
+  renderStatsPanel();
+  renderWordList();
+  if(!current) renderCard(false);
+}
+
 function deleteWord(id){
   const card = cards.find(c => c.id === id);
   if(!card) return;
@@ -978,11 +994,18 @@ function renderWordList(){
   shown.forEach(c=>{
     const row = document.createElement('div');
     row.className = 'word-row';
+    let opts = '';
+    for(let i=1;i<=5;i++){
+      opts += '<option value="'+i+'"'+(c.box===i?' selected':'')+'>box '+i+'</option>';
+    }
     row.innerHTML =
       '<span class="w">' + escapeHtml(c.word) + '</span>' +
       '<span class="t">' + escapeHtml(c.translation) + '</span>' +
-      '<span class="b">box ' + c.box + '</span>' +
+      '<select class="box-select" title="Move to another box">' + opts + '</select>' +
       '<button class="del" title="Delete" aria-label="Delete">×</button>';
+    row.querySelector('.box-select').addEventListener('change', (e)=>{
+      moveWord(c.id, parseInt(e.target.value, 10));
+    });
     row.querySelector('.del').addEventListener('click', ()=>deleteWord(c.id));
     wrap.appendChild(row);
   });

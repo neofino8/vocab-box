@@ -272,9 +272,9 @@
     resize:vertical;
   }
   .add-actions{
-    display:flex; justify-content:space-between; align-items:center; margin-top:10px;
+    display:flex; justify-content:space-between; align-items:flex-start; margin-top:10px; gap:12px;
   }
-  .parse-msg{ font-size:12px; color:var(--accent); }
+  .parse-msg{ font-size:12px; color:var(--accent); line-height:1.5; flex:1; }
   .btn-parse{
     padding:9px 16px; background:var(--accent); color:var(--ink);
   }
@@ -404,7 +404,7 @@
       </button>
     </div>
   </div>
-  <p class="subtitle">Flashcards filed by how well you know them <span style="opacity:0.45;font-size:11px;">· v2.0</span></p>
+  <p class="subtitle">Flashcards filed by how well you know them <span style="opacity:0.45;font-size:11px;">· v2.1</span></p>
 
   <div class="mode-chips">
     <button class="chip" id="dirChip">Direction: word → translation</button>
@@ -842,18 +842,36 @@ function parseLine(line){
 
 function parseBulk(text){
   const lines = text.split('\n');
-  let added = 0, updated = 0;
+  let added = 0;
+  const dupSame = [];      // already in your box, identical translation
+  const dupChanged = [];   // already in your box, different translation
+  const dupInList = [];    // repeated twice inside the pasted text itself
+  const seenThisPaste = {};
+  let unparsed = 0;
+
   lines.forEach(line=>{
     if(!line.trim()) return;
     const m = parseLine(line);
-    if(!m) return;
+    if(!m){ unparsed++; return; }
     const word = m[1].trim();
     const translation = m[2].trim();
-    if(!word || !translation) return;
-    const existing = cards.find(c => c.word.toLowerCase() === word.toLowerCase());
+    if(!word || !translation){ unparsed++; return; }
+    const key = word.toLowerCase();
+
+    if(seenThisPaste[key]){
+      dupInList.push(word);
+      return;
+    }
+    seenThisPaste[key] = true;
+
+    const existing = cards.find(c => c.word.toLowerCase() === key);
     if(existing){
-      existing.translation = translation;
-      updated++;
+      if(existing.translation.toLowerCase() === translation.toLowerCase()){
+        dupSame.push(word);
+      } else {
+        existing.translation = translation;
+        dupChanged.push(word);
+      }
     } else {
       cards.push({
         id: Date.now() + '-' + Math.random().toString(36).slice(2,8),
@@ -864,7 +882,12 @@ function parseBulk(text){
       added++;
     }
   });
-  return {added, updated};
+  return {added, dupSame, dupChanged, dupInList, unparsed};
+}
+
+function summarizeList(words, limit){
+  const shown = words.slice(0, limit).join(', ');
+  return words.length > limit ? shown + ' +' + (words.length - limit) + ' more' : shown;
 }
 
 const SAMPLE_DECK = [
@@ -1320,16 +1343,22 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
 
 document.getElementById('parseBtn').addEventListener('click', ()=>{
   const text = document.getElementById('bulkInput').value;
-  const {added, updated} = parseBulk(text);
+  const r = parseBulk(text);
   saveCards();
-  document.getElementById('bulkInput').value = '';
   const msg = document.getElementById('parseMsg');
-  if(added === 0 && updated === 0){
-    msg.textContent = 'No lines matched. Check the format.';
+  const parts = [];
+  if(r.added) parts.push(r.added + ' added');
+  if(r.dupSame.length) parts.push('already had: ' + summarizeList(r.dupSame, 3));
+  if(r.dupChanged.length) parts.push('translation updated: ' + summarizeList(r.dupChanged, 3));
+  if(r.dupInList.length) parts.push('repeated in your list: ' + summarizeList(r.dupInList, 3));
+  if(parts.length === 0){
+    msg.textContent = 'No lines matched. Use: word — translation';
   } else {
-    msg.textContent = added + ' added' + (updated ? ', ' + updated + ' updated' : '');
-    setTimeout(()=>{ msg.textContent = ''; }, 4000);
+    msg.textContent = parts.join(' · ');
+    document.getElementById('bulkInput').value = '';
   }
+  clearTimeout(window._parseMsgTimer);
+  window._parseMsgTimer = setTimeout(()=>{ msg.textContent = ''; }, 9000);
   buildQueue();
   renderStats();
   renderWordList();

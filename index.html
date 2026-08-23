@@ -79,9 +79,135 @@
     margin:0 0 16px;
     text-shadow:0 1px 2px rgba(0,0,0,0.3);
   }
+  .mode-tabs{
+    display:flex; gap:6px; margin-bottom:12px;
+    background:var(--panel); padding:4px; border-radius:9px;
+  }
+  .tab-btn{
+    flex:1; padding:9px 4px; border-radius:6px;
+    background:transparent; color:var(--soft); font-size:12.5px;
+  }
+
+  /* Learn */
+  .learn-card{
+    width:100%; background:var(--card-bg); color:var(--card-ink);
+    border-radius:8px; padding:38px 24px 30px; position:relative;
+    text-align:center; min-height:210px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  .learn-counter{
+    position:absolute; top:14px; right:16px;
+    font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--card-ink-soft);
+  }
+  .learn-new{
+    position:absolute; top:12px; left:16px;
+    font-size:9.5px; letter-spacing:0.7px; text-transform:uppercase;
+    background:var(--teal); color:#fff; padding:3px 9px; border-radius:20px;
+  }
+  .learn-word{
+    font-family:'Source Serif 4', serif; font-size:36px; font-weight:600; line-height:1.15;
+  }
+  .learn-trans{
+    font-family:'Source Serif 4', serif; font-size:23px; color:var(--card-trans); margin-top:14px;
+  }
+  .learn-nav{
+    display:flex; gap:8px; width:100%; margin-top:14px;
+  }
+  .btn-nav{
+    padding:12px 14px; background:var(--panel); color:var(--paper);
+    border:1px solid var(--line); font-size:13px;
+  }
+  .btn-nav:disabled{ opacity:0.35; cursor:default; }
+  .btn-nav:not(:disabled):hover{ filter:brightness(1.2); }
+  .btn-practice-this{
+    flex:1; padding:12px; background:var(--brick-light); color:var(--brick); font-size:13px;
+  }
+  .btn-know{
+    flex:1; padding:12px; background:var(--teal-light); color:var(--teal); font-size:13px; font-weight:600;
+  }
+  .btn-practice-this:hover, .btn-know:hover{ filter:brightness(0.96); }
+  .learn-stats{
+    display:flex; gap:6px; width:100%; margin-top:12px;
+  }
+  .learn-stat{
+    flex:1; background:var(--panel); border-radius:6px; padding:9px 6px; text-align:center;
+  }
+  .learn-stat .v{ font-family:'IBM Plex Mono', monospace; font-size:15px; }
+  .learn-stat .k{
+    font-size:9.5px; color:var(--soft); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px;
+  }
+  .tab-btn.on{ background:var(--card-bg); color:var(--card-ink); font-weight:600; }
+  .tab-btn:not(.on):hover{ color:var(--paper); }
   .mode-chips{
     display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap;
   }
+
+  /* Quiz */
+  .quiz-label{
+    display:inline-block; font-size:10px; letter-spacing:0.8px; text-transform:uppercase;
+    color:var(--accent); border:1px solid var(--accent); border-radius:20px;
+    padding:4px 12px; margin-bottom:16px;
+  }
+  .quiz-prompt{
+    font-family:'Source Serif 4', serif; font-size:28px; font-weight:600;
+    margin-bottom:20px; text-align:center;
+  }
+  .quiz-options{ display:flex; flex-direction:column; gap:9px; width:100%; }
+  .quiz-opt{
+    padding:14px 16px; text-align:left; font-size:15px;
+    background:var(--card-bg); color:var(--card-ink);
+    border:1px solid transparent; border-radius:8px;
+  }
+  .quiz-opt:hover:not(:disabled){ filter:brightness(0.95); }
+  .quiz-opt:disabled{ cursor:default; }
+  .quiz-opt.right{ background:var(--teal-light); color:var(--teal); border-color:var(--teal); font-weight:600; }
+  .quiz-opt.wrong{ background:var(--brick-light); color:var(--brick); border-color:var(--brick); }
+  .quiz-foot{
+    display:flex; justify-content:space-between; align-items:center;
+    width:100%; margin-top:18px; font-size:13px; color:var(--soft);
+  }
+  .btn-next{
+    padding:11px 20px; background:var(--accent); color:var(--ink); font-size:13px;
+  }
+  .btn-next:hover{ filter:brightness(1.05); }
+
+  /* Speed Match */
+  .match-head{
+    display:flex; justify-content:space-between; align-items:center;
+    width:100%; margin-bottom:14px;
+  }
+  .match-timer{
+    font-family:'IBM Plex Mono', monospace; font-size:34px; font-weight:500;
+  }
+  .match-timer.low{ color:var(--brick, #E0868E); }
+  .match-score{ font-size:13px; color:var(--soft); text-align:right; }
+  .match-score b{ color:var(--accent); font-size:17px; display:block; }
+  .match-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:8px; width:100%;
+  }
+  .match-tile{
+    padding:13px 10px; border-radius:8px; font-size:13.5px;
+    background:var(--card-bg); color:var(--card-ink);
+    border:2px solid transparent; text-align:center;
+    min-height:48px; word-break:break-word;
+  }
+  .match-tile:hover:not(:disabled){ filter:brightness(0.95); }
+  .match-tile.picked{ border-color:var(--accent); }
+  .match-tile.hit{ background:var(--teal-light); color:var(--teal); border-color:var(--teal); }
+  .match-tile.miss{ background:var(--brick-light); color:var(--brick); }
+  .match-tile.gone{ visibility:hidden; }
+  .match-center{ text-align:center; width:100%; }
+  .match-big{
+    font-family:'IBM Plex Mono', monospace; font-size:52px; font-weight:500; color:var(--accent);
+  }
+  .match-sub{
+    font-family:'Source Serif 4', serif; font-size:22px; margin:6px 0 18px;
+  }
+  .stage-note{
+    text-align:center; padding:44px 20px; color:var(--soft);
+    background:var(--panel); border-radius:8px; width:100%;
+  }
+  .stage-note .big{ font-family:'Source Serif 4', serif; font-size:19px; color:var(--paper); margin-bottom:6px; }
   .chip{
     padding:7px 13px; border-radius:20px; font-size:12px;
     background:var(--panel); border:1px solid var(--line); color:var(--soft);
@@ -404,7 +530,14 @@
       </button>
     </div>
   </div>
-  <p class="subtitle">Flashcards filed by how well you know them <span style="opacity:0.45;font-size:11px;">· v2.1</span></p>
+  <p class="subtitle">Flashcards filed by how well you know them <span style="opacity:0.45;font-size:11px;">· v2.3</span></p>
+
+  <div class="mode-tabs">
+    <button class="tab-btn" data-mode="learn">Learn</button>
+    <button class="tab-btn on" data-mode="review">Review</button>
+    <button class="tab-btn" data-mode="quiz">Quiz</button>
+    <button class="tab-btn" data-mode="match">Match</button>
+  </div>
 
   <div class="mode-chips">
     <button class="chip" id="dirChip">Direction: word → translation</button>
@@ -530,6 +663,7 @@ function loadAll(){
       if(raw){ localStorage.setItem(STORAGE_KEY, raw); }
     }
     cards = raw ? JSON.parse(raw) : [];
+    cards.forEach(c => { if(c.seen === undefined) c.seen = true; });
   }catch(e){ cards = []; }
   try{
     const s = localStorage.getItem(SETTINGS_KEY);
@@ -800,6 +934,7 @@ function importBackup(file){
             word: imp.word,
             translation: imp.translation,
             box: Math.min(Math.max(imp.box||1,1),5),
+            seen: imp.seen !== undefined ? imp.seen : true,
             due: imp.due || Date.now()
           });
           added++;
@@ -877,6 +1012,7 @@ function parseBulk(text){
         id: Date.now() + '-' + Math.random().toString(36).slice(2,8),
         word, translation,
         box: 1,
+        seen: false,
         due: Date.now()
       });
       added++;
@@ -905,7 +1041,7 @@ function loadSampleDeck(){
     if(cards.find(c => c.word.toLowerCase() === word.toLowerCase())) return;
     cards.push({
       id: Date.now() + '-' + Math.random().toString(36).slice(2,8),
-      word, translation, box:1, due: Date.now()
+      word, translation, box:1, seen:false, due: Date.now()
     });
   });
   saveCards();
@@ -1090,7 +1226,326 @@ function checkAnswer(input, c){
   return answerVariants(c).some(v => v === val);
 }
 
+let mode = 'review';
+let learnIdx = 0;
+let learnList = [];
+let quiz = null;
+let quizScore = {right:0, total:0};
+let match = null;
+let matchTimerId = null;
+
+function setMode(m){
+  if(matchTimerId){ clearInterval(matchTimerId); matchTimerId = null; }
+  mode = m;
+  match = null;
+  quiz = null;
+  document.querySelectorAll('.tab-btn').forEach(b=>{
+    b.classList.toggle('on', b.dataset.mode === m);
+  });
+  if(m === 'review'){ buildQueue(); current = null; }
+  if(m === 'learn'){ buildLearnList(); }
+  renderCard(false);
+}
+
+function buildLearnList(){
+  const unseen = cards.filter(c => !c.seen);
+  learnList = unseen.length ? unseen.concat(cards.filter(c => c.seen)) : cards.slice();
+  learnIdx = 0;
+}
+
+function renderLearn(){
+  const stage = document.getElementById('stage');
+  stage.innerHTML = '';
+  if(cards.length === 0){
+    const n = document.createElement('div');
+    n.className = 'stage-note';
+    n.innerHTML = '<div class="big">Nothing to learn yet</div>Add words below, or load the sample deck from Review.';
+    stage.appendChild(n);
+    return;
+  }
+  if(!learnList.length) buildLearnList();
+  if(learnIdx >= learnList.length) learnIdx = learnList.length - 1;
+  if(learnIdx < 0) learnIdx = 0;
+  const c = learnList[learnIdx];
+
+  const wrap = document.createElement('div');
+  wrap.style.width = '100%';
+  wrap.innerHTML =
+    '<div class="learn-card">' +
+      (c.seen ? '' : '<span class="learn-new">new</span>') +
+      '<span class="learn-counter">' + (learnIdx+1) + ' / ' + learnList.length + '</span>' +
+      '<button class="speak-btn" id="learnSpeak" title="Pronounce" aria-label="Pronounce" style="top:34px;">' + SPEAKER_SVG + '</button>' +
+      '<div class="learn-word">' + escapeHtml(c.word) + '</div>' +
+      '<div class="learn-trans">' + escapeHtml(c.translation) + '</div>' +
+    '</div>' +
+    '<div class="learn-nav">' +
+      '<button class="btn-nav" id="learnPrev"' + (learnIdx===0?' disabled':'') + '>←</button>' +
+      '<button class="btn-practice-this" id="learnPractice">Still learning</button>' +
+      '<button class="btn-know" id="learnKnow">I know it ✓</button>' +
+      '<button class="btn-nav" id="learnNext"' + (learnIdx>=learnList.length-1?' disabled':'') + '>→</button>' +
+    '</div>' +
+    '<div class="learn-stats">' +
+      '<div class="learn-stat"><div class="v">' + cards.filter(x=>!x.seen).length + '</div><div class="k">new</div></div>' +
+      '<div class="learn-stat"><div class="v">' + cards.filter(x=>x.seen).length + '</div><div class="k">introduced</div></div>' +
+      '<div class="learn-stat"><div class="v">' + cards.filter(x=>x.box===5).length + '</div><div class="k">mastered</div></div>' +
+    '</div>';
+  stage.appendChild(wrap);
+
+  const sp = wrap.querySelector('#learnSpeak');
+  if(sp) sp.addEventListener('click', ()=>speak(c.word, sp));
+  wrap.querySelector('#learnPrev').addEventListener('click', ()=>{ learnIdx--; renderLearn(); });
+  wrap.querySelector('#learnNext').addEventListener('click', ()=>{ learnIdx++; renderLearn(); });
+  wrap.querySelector('#learnKnow').addEventListener('click', ()=>introduce(c, 3));
+  wrap.querySelector('#learnPractice').addEventListener('click', ()=>introduce(c, 1));
+}
+
+function introduce(card, box){
+  card.seen = true;
+  card.box = box;
+  card.due = box === 1 ? Date.now() : Date.now() + INTERVAL_DAYS[box] * DAY;
+  saveCards();
+  renderStats();
+  renderStatsPanel();
+  renderWordList();
+  if(learnIdx < learnList.length - 1) learnIdx++;
+  renderLearn();
+}
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function notEnough(stage, need, what){
+  const n = document.createElement('div');
+  n.className = 'stage-note';
+  n.innerHTML = '<div class="big">Need at least ' + need + ' words</div>' +
+    what + ' needs a few more words to work. You have ' + cards.length + '. Add more below' +
+    (cards.length === 0 ? ', or load the sample deck from Review.' : '.');
+  stage.appendChild(n);
+}
+
+/* ---------- Quiz ---------- */
+
+function newQuizQuestion(){
+  const due = dueCards();
+  const pool = due.length ? due : cards;
+  const card = pool[Math.floor(Math.random()*pool.length)];
+  const others = shuffle(cards.filter(c => c.id !== card.id)).slice(0,3);
+  quiz = {
+    card,
+    options: shuffle([card].concat(others)),
+    answered: false,
+    pickedId: null
+  };
+}
+
+function renderQuiz(){
+  const stage = document.getElementById('stage');
+  stage.innerHTML = '';
+  if(cards.length < 4){ notEnough(stage, 4, 'Quiz'); return; }
+  if(quiz && !cards.find(c => c.id === quiz.card.id)) quiz = null;
+  if(!quiz) newQuizQuestion();
+
+  const wrap = document.createElement('div');
+  wrap.style.width = '100%';
+  wrap.style.display = 'flex';
+  wrap.style.flexDirection = 'column';
+  wrap.style.alignItems = 'center';
+
+  const dirLabel = settings.direction === 'normal' ? 'Choose the correct translation' : 'Choose the correct word';
+  wrap.innerHTML =
+    '<span class="quiz-label">' + dirLabel + '</span>' +
+    '<div class="quiz-prompt">' + escapeHtml(frontText(quiz.card)) + '</div>' +
+    '<div class="quiz-options" id="quizOpts"></div>' +
+    '<div class="quiz-foot"><span id="quizScore"></span><span id="quizNextSlot"></span></div>';
+  stage.appendChild(wrap);
+
+  const opts = wrap.querySelector('#quizOpts');
+  quiz.options.forEach(o=>{
+    const b = document.createElement('button');
+    b.className = 'quiz-opt';
+    b.textContent = backText(o);
+    if(quiz.answered){
+      b.disabled = true;
+      if(o.id === quiz.card.id) b.classList.add('right');
+      else if(o.id === quiz.pickedId) b.classList.add('wrong');
+    } else {
+      b.addEventListener('click', ()=>answerQuiz(o.id));
+    }
+    opts.appendChild(b);
+  });
+
+  wrap.querySelector('#quizScore').textContent =
+    quizScore.total ? quizScore.right + ' / ' + quizScore.total + ' correct' : '';
+
+  if(quiz.answered){
+    const nb = document.createElement('button');
+    nb.className = 'btn-next';
+    nb.textContent = 'Next question →';
+    nb.addEventListener('click', ()=>{ newQuizQuestion(); renderQuiz(); });
+    wrap.querySelector('#quizNextSlot').appendChild(nb);
+  }
+}
+
+function answerQuiz(pickedId){
+  if(quiz.answered) return;
+  quiz.answered = true;
+  quiz.pickedId = pickedId;
+  const correct = pickedId === quiz.card.id;
+  quizScore.total++;
+  if(correct) quizScore.right++;
+
+  const card = quiz.card;
+  if(correct){
+    card.box = Math.min(card.box + 1, 5);
+    card.due = Date.now() + INTERVAL_DAYS[card.box] * DAY;
+  } else {
+    card.box = 1;
+    card.due = Date.now();
+  }
+  saveCards();
+  logReview();
+  renderStats();
+  renderStatsPanel();
+  renderQuiz();
+}
+
+/* ---------- Speed Match ---------- */
+
+const MATCH_SECONDS = 60;
+const MATCH_PAIRS = 5;
+
+function startMatch(){
+  match = {
+    left:[], right:[], picked:null, locked:false,
+    score:0, timeLeft:MATCH_SECONDS, over:false
+  };
+  dealMatch();
+  renderMatch();
+  if(matchTimerId) clearInterval(matchTimerId);
+  matchTimerId = setInterval(()=>{
+    if(!match || match.over) return;
+    match.timeLeft--;
+    if(match.timeLeft <= 0){
+      match.timeLeft = 0;
+      match.over = true;
+      clearInterval(matchTimerId);
+      matchTimerId = null;
+      renderMatch();
+    } else {
+      const t = document.getElementById('matchTimer');
+      if(t){
+        t.textContent = match.timeLeft;
+        t.classList.toggle('low', match.timeLeft <= 10);
+      }
+    }
+  }, 1000);
+}
+
+function dealMatch(){
+  const picks = shuffle(cards).slice(0, Math.min(MATCH_PAIRS, cards.length));
+  match.left = shuffle(picks).map(c=>({id:c.id, text:c.word, done:false}));
+  match.right = shuffle(picks).map(c=>({id:c.id, text:c.translation, done:false}));
+  match.picked = null;
+}
+
+function renderMatch(){
+  const stage = document.getElementById('stage');
+  stage.innerHTML = '';
+  if(cards.length < MATCH_PAIRS){ notEnough(stage, MATCH_PAIRS, 'Speed Match'); return; }
+
+  const wrap = document.createElement('div');
+  wrap.style.width = '100%';
+
+  if(!match){
+    wrap.innerHTML =
+      '<div class="stage-note"><div class="big">60-second challenge</div>' +
+      'Match each word to its translation as fast as you can. This is just for speed — it does not change your boxes.' +
+      '<br><button class="btn-sample" id="matchStart">Start</button></div>';
+    stage.appendChild(wrap);
+    wrap.querySelector('#matchStart').addEventListener('click', startMatch);
+    return;
+  }
+
+  if(match.over){
+    wrap.innerHTML =
+      '<div class="match-center">' +
+      '<div class="match-big">' + match.score + '</div>' +
+      '<div class="match-sub">' + (match.score === 1 ? '1 pair matched' : match.score + ' pairs matched') + '</div>' +
+      '<button class="btn-sample" id="matchAgain">Play again</button></div>';
+    stage.appendChild(wrap);
+    wrap.querySelector('#matchAgain').addEventListener('click', startMatch);
+    return;
+  }
+
+  wrap.innerHTML =
+    '<div class="match-head">' +
+      '<div class="match-timer' + (match.timeLeft<=10?' low':'') + '" id="matchTimer">' + match.timeLeft + '</div>' +
+      '<div class="match-score"><b>' + match.score + '</b>matched</div>' +
+    '</div><div class="match-grid" id="matchGrid"></div>';
+  stage.appendChild(wrap);
+
+  const grid = wrap.querySelector('#matchGrid');
+  for(let i=0;i<match.left.length;i++){
+    grid.appendChild(matchTile(match.left[i], 'left'));
+    grid.appendChild(matchTile(match.right[i], 'right'));
+  }
+}
+
+function matchTile(item, side){
+  const b = document.createElement('button');
+  b.className = 'match-tile' + (item.done ? ' gone' : '');
+  b.textContent = item.text;
+  if(item.done){ b.disabled = true; return b; }
+  if(match.picked && match.picked.side === side && match.picked.item === item){
+    b.classList.add('picked');
+  }
+  b.addEventListener('click', ()=>pickMatch(item, side, b));
+  return b;
+}
+
+function pickMatch(item, side, el){
+  if(!match || match.over || match.locked || item.done) return;
+  if(!match.picked){
+    match.picked = {item, side};
+    renderMatch();
+    return;
+  }
+  if(match.picked.side === side){
+    match.picked = {item, side};
+    renderMatch();
+    return;
+  }
+  const a = match.picked.item, b = item;
+  if(a.id === b.id){
+    a.done = true; b.done = true;
+    match.score++;
+    match.picked = null;
+    if(match.left.every(x=>x.done)){
+      dealMatch();
+    }
+    renderMatch();
+  } else {
+    match.locked = true;
+    el.classList.add('miss');
+    match.picked = null;
+    setTimeout(()=>{
+      match.locked = false;
+      if(match && !match.over) renderMatch();
+    }, 350);
+  }
+}
+
 function renderCard(animateIn){
+  if(mode === 'learn'){ renderLearn(); return; }
+  if(mode === 'quiz'){ renderQuiz(); return; }
+  if(mode === 'match'){ renderMatch(); return; }
+
   const stage = document.getElementById('stage');
   stage.innerHTML = '';
 
@@ -1296,6 +1751,10 @@ document.getElementById('bgFile').addEventListener('change', (e)=>{
   if(e.target.files && e.target.files[0]){
     handleImageUpload(e.target.files[0]);
   }
+});
+
+document.querySelectorAll('.tab-btn').forEach(b=>{
+  b.addEventListener('click', ()=>setMode(b.dataset.mode));
 });
 
 document.getElementById('voiceChip').addEventListener('click', ()=>{

@@ -515,6 +515,75 @@
     display:flex; gap:8px; flex-wrap:wrap;
   }
   .backup-msg{ font-size:12px; color:var(--accent); margin-top:8px; min-height:16px; }
+  /* Landing */
+  .landing{ display:none; }
+  body.landing-on .landing{ display:block; }
+  body.landing-on .title-row,
+  body.landing-on .subtitle,
+  body.landing-on .mode-tabs,
+  body.landing-on .mode-chips,
+  body.landing-on .drawers,
+  body.landing-on .statline,
+  body.landing-on .stage,
+  body.landing-on .toggle-add,
+  body.landing-on .add-panel,
+  body.landing-on .stats-panel,
+  body.landing-on .theme-panel{ display:none; }
+  .about-link{
+    background:transparent; border:none; color:var(--soft);
+    font-family:'Inter',sans-serif; font-size:12.5px;
+    height:38px; padding:0 4px;
+    display:flex; align-items:center;
+    text-decoration:underline; text-underline-offset:2px;
+  }
+  .about-link:hover{ color:var(--paper); }
+  .landing-title{
+    font-family:'Source Serif 4', serif; font-weight:600;
+    font-size:36px; line-height:1.1; letter-spacing:0.2px;
+    margin:6px 0 0; text-align:center;
+  }
+  .landing-tagline{
+    font-family:'Source Serif 4', serif; font-size:19px; line-height:1.35;
+    color:var(--accent); margin:10px 0 0; text-align:center;
+  }
+  .landing-lede{
+    font-size:13.5px; line-height:1.7; color:var(--soft);
+    margin:20px 0 0;
+    text-shadow:0 1px 2px rgba(0,0,0,0.3);
+  }
+  .landing-points{
+    list-style:none; margin:18px 0 0; padding:0;
+    background:var(--panel); border-radius:8px;
+    transition:background-color .3s ease;
+  }
+  .landing-points li{
+    padding:13px 16px; border-bottom:1px solid var(--line);
+    font-size:13px; line-height:1.55; color:var(--soft);
+  }
+  .landing-points li:last-child{ border-bottom:none; }
+  .landing-points b{
+    display:block; margin-bottom:3px;
+    font-size:14px; font-weight:600; color:var(--paper);
+  }
+  .landing-actions{
+    display:flex; flex-direction:column; gap:9px; margin-top:20px;
+  }
+  .btn-landing{
+    width:100%; padding:15px 20px;
+    background:var(--accent); color:var(--ink);
+    font-size:15px; font-weight:600;
+  }
+  .btn-landing:hover{ filter:brightness(1.05); }
+  .btn-landing-alt{
+    width:100%; padding:14px 20px;
+    background:transparent; border:1px solid var(--line); color:var(--paper);
+    border-radius:6px; font-size:14px;
+  }
+  .btn-landing-alt:hover{ background:var(--panel); }
+  @media (min-width:440px){
+    .landing-actions{ flex-direction:row; }
+    .landing-actions button{ flex:1; }
+  }
 </style>
 </head>
 <body>
@@ -522,6 +591,7 @@
   <div class="title-row">
     <h1>Vocab Box</h1>
     <div class="header-btns">
+      <button class="about-link" id="aboutLink">About</button>
       <button class="icon-btn" id="statsBtn" title="Stats" aria-label="Stats">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="5" y1="20" x2="5" y2="12"/><line x1="12" y1="20" x2="12" y2="6"/><line x1="19" y1="20" x2="19" y2="10"/></svg>
       </button>
@@ -531,6 +601,21 @@
     </div>
   </div>
   <p class="subtitle">Flashcards filed by how well you know them <span style="opacity:0.45;font-size:11px;">· v2.3</span></p>
+
+  <section class="landing" id="landing">
+    <h2 class="landing-title">Vocab Box</h2>
+    <p class="landing-tagline">Learn words and actually remember them.</p>
+    <p class="landing-lede">Vocab Box uses the Leitner system: words you know come back rarely, words you forget come back tomorrow. Reviewing something just before you&rsquo;d forget it is what moves it into long-term memory.</p>
+    <ul class="landing-points">
+      <li><b>Your words.</b> Paste any list, any language pair. Not someone else&rsquo;s curriculum.</li>
+      <li><b>Four ways to study.</b> Learn, review, quiz, and a 60-second match challenge.</li>
+      <li><b>Private and free.</b> No account, no cost. Everything stays in your browser.</li>
+    </ul>
+    <div class="landing-actions">
+      <button class="btn-landing" id="landingSample">Start with 20 sample words</button>
+      <button class="btn-landing-alt" id="landingAdd">Add my own list</button>
+    </div>
+  </section>
 
   <div class="mode-tabs">
     <button class="tab-btn" data-mode="learn">Learn</button>
@@ -1825,6 +1910,34 @@ document.getElementById('parseBtn').addEventListener('click', ()=>{
   renderCard(false);
 });
 
+function showLanding(){
+  document.getElementById('addPanel').classList.remove('open');
+  document.getElementById('themePanel').classList.remove('open');
+  document.getElementById('statsPanel').classList.remove('open');
+  document.body.classList.add('landing-on');
+  window.scrollTo(0, 0);
+}
+
+function hideLanding(){
+  document.body.classList.remove('landing-on');
+}
+
+document.getElementById('aboutLink').addEventListener('click', showLanding);
+
+document.getElementById('landingSample').addEventListener('click', ()=>{
+  hideLanding();
+  loadSampleDeck();
+  setMode('learn');
+});
+
+document.getElementById('landingAdd').addEventListener('click', ()=>{
+  hideLanding();
+  boxFilter = null;
+  document.getElementById('addPanel').classList.add('open');
+  renderWordList();
+  document.getElementById('bulkInput').focus();
+});
+
 function init(){
   loadAll();
   renderSwatches();
@@ -1836,6 +1949,7 @@ function init(){
   renderStats();
   renderStatsPanel();
   renderCard(false);
+  if(cards.length === 0) showLanding();
 }
 
 init();

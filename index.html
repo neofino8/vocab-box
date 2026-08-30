@@ -1231,10 +1231,10 @@ function undoDelete(){
   if(!current) renderCard(false);
 }
 
-// Translations are comma-separated lists like "вершина, пик (успеха)", so a
+// Translations are separated lists like "достоинство, заслуга; заслужить", so a
 // prefix match means any one of those words starts with the query.
 function translationWords(translation){
-  return translation.toLowerCase().split(/[\s,()]+/).filter(Boolean);
+  return translation.toLowerCase().split(/[\s,;\/()]+/).filter(Boolean);
 }
 
 function rankWords(pool, filter){

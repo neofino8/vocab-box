@@ -1218,6 +1218,19 @@ function undoDelete(){
   if(!current) renderCard(false);
 }
 
+function rankWords(pool, filter){
+  const ordered = pool.slice().reverse();
+  if(!filter) return ordered;
+  const starts = [], within = [], inTranslation = [];
+  ordered.forEach(c=>{
+    const word = c.word.toLowerCase();
+    if(word.startsWith(filter)) starts.push(c);
+    else if(word.includes(filter)) within.push(c);
+    else if(c.translation.toLowerCase().includes(filter)) inTranslation.push(c);
+  });
+  return starts.concat(within, inTranslation);
+}
+
 function renderWordList(){
   const wrap = document.getElementById('wordList');
   const filter = (document.getElementById('wordFilter').value || '').trim().toLowerCase();
@@ -1231,10 +1244,7 @@ function renderWordList(){
     title.innerHTML = 'Your words (' + cards.length + ')';
   }
   wrap.innerHTML = '';
-  const shown = pool
-    .filter(c => !filter || c.word.toLowerCase().includes(filter) || c.translation.toLowerCase().includes(filter))
-    .slice()
-    .reverse();
+  const shown = rankWords(pool, filter);
   if(shown.length === 0){
     wrap.innerHTML = '<div class="word-list-empty">' + (pool.length === 0 ? (boxFilter ? 'No words in this box yet.' : 'No words yet.') : 'Nothing matches that filter.') + '</div>';
     return;

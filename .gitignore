@@ -1,1 +1,6 @@
 .DS_Store
+
+# macOS custom-folder-icon file. Its real name is "Icon" plus a trailing
+# carriage return; git strips a trailing CR from .gitignore lines, so the
+# literal name cannot be written here. "Icon?" matches it via the ? wildcard.
+Icon?

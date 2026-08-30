@@ -752,7 +752,20 @@ function loadAll(){
       if(raw){ localStorage.setItem(STORAGE_KEY, raw); }
     }
     cards = raw ? JSON.parse(raw) : [];
-    cards.forEach(c => { if(c.seen === undefined) c.seen = true; });
+    // Older saves (and some pasted lists) carry padded words, which broke
+    // prefix matching in the filter. Repair once, and only write if it helped.
+    let padded = false;
+    cards.forEach(c => {
+      if(c.seen === undefined) c.seen = true;
+      const word = String(c.word == null ? '' : c.word).trim();
+      const translation = String(c.translation == null ? '' : c.translation).trim();
+      if(word !== c.word || translation !== c.translation){
+        c.word = word;
+        c.translation = translation;
+        padded = true;
+      }
+    });
+    if(padded) saveCards();
   }catch(e){ cards = []; }
   try{
     const s = localStorage.getItem(SETTINGS_KEY);

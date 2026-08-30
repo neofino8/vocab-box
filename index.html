@@ -1223,7 +1223,7 @@ function rankWords(pool, filter){
   if(!filter) return ordered;
   const starts = [], within = [], inTranslation = [];
   ordered.forEach(c=>{
-    const word = c.word.toLowerCase();
+    const word = c.word.trim().toLowerCase();
     if(word.startsWith(filter)) starts.push(c);
     else if(word.includes(filter)) within.push(c);
     else if(c.translation.toLowerCase().includes(filter)) inTranslation.push(c);
@@ -1236,15 +1236,16 @@ function renderWordList(){
   const filter = (document.getElementById('wordFilter').value || '').trim().toLowerCase();
   const title = document.getElementById('wordListTitle');
   const pool = boxFilter ? cards.filter(c => c.box === boxFilter) : cards;
+  const shown = rankWords(pool, filter);
+  const count = filter ? shown.length : pool.length;
   if(boxFilter){
-    title.innerHTML = 'Box ' + boxFilter + ' (' + pool.length + ') <button class="show-all" id="showAllBtn">show all</button>';
+    title.innerHTML = 'Box ' + boxFilter + ' (' + count + ') <button class="show-all" id="showAllBtn">show all</button>';
     const sa = document.getElementById('showAllBtn');
     if(sa) sa.addEventListener('click', ()=>{ boxFilter = null; renderWordList(); });
   } else {
-    title.innerHTML = 'Your words (' + cards.length + ')';
+    title.innerHTML = 'Your words (' + count + ')';
   }
   wrap.innerHTML = '';
-  const shown = rankWords(pool, filter);
   if(shown.length === 0){
     wrap.innerHTML = '<div class="word-list-empty">' + (pool.length === 0 ? (boxFilter ? 'No words in this box yet.' : 'No words yet.') : 'Nothing matches that filter.') + '</div>';
     return;

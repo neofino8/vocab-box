@@ -1231,17 +1231,25 @@ function undoDelete(){
   if(!current) renderCard(false);
 }
 
+// Translations are comma-separated lists like "вершина, пик (успеха)", so a
+// prefix match means any one of those words starts with the query.
+function translationWords(translation){
+  return translation.toLowerCase().split(/[\s,()]+/).filter(Boolean);
+}
+
 function rankWords(pool, filter){
   const ordered = pool.slice().reverse();
   if(!filter) return ordered;
-  const starts = [], within = [], inTranslation = [];
+  const starts = [], within = [], transStarts = [], transWithin = [];
   ordered.forEach(c=>{
     const word = c.word.trim().toLowerCase();
+    const translation = c.translation.toLowerCase();
     if(word.startsWith(filter)) starts.push(c);
     else if(word.includes(filter)) within.push(c);
-    else if(c.translation.toLowerCase().includes(filter)) inTranslation.push(c);
+    else if(translationWords(c.translation).some(t => t.startsWith(filter))) transStarts.push(c);
+    else if(translation.includes(filter)) transWithin.push(c);
   });
-  return starts.concat(within, inTranslation);
+  return starts.concat(within, transStarts, transWithin);
 }
 
 function renderWordList(){

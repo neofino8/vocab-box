@@ -620,7 +620,8 @@
     flex-shrink:0; padding:9px 11px; font-size:11.5px; font-weight:600;
     background:var(--teal-light); color:var(--teal);
   }
-  .learn-row-know:hover{ filter:brightness(0.96); }
+  .learn-row-know:not(:disabled):hover{ filter:brightness(0.96); }
+  .learn-row-know:disabled{ cursor:default; }
   .learn-row.is-known .learn-row-know{
     background:transparent; border:1px solid var(--line);
     color:var(--soft); font-weight:500;
@@ -1441,13 +1442,19 @@ function learnRow(c, i){
       '<div class="learn-row-trans">' + escapeHtml(c.translation) + '</div>' +
     '</div>' +
     '<button class="learn-row-know">' + (c.seen ? 'Known \u2713' : 'I know it') + '</button>';
-  row.querySelector('.learn-row-know').addEventListener('click', ()=>{
+  const btn = row.querySelector('.learn-row-know');
+  // Already-known words are inert: re-marking would knock a mastered word
+  // back down to box 3.
+  btn.disabled = c.seen;
+  btn.addEventListener('click', ()=>{
+    if(btn.disabled) return;
     markKnown(c, 3);
     // Update this row only, so the list does not jump under the reader.
     const badge = row.querySelector('.learn-row-new');
     if(badge) badge.remove();
     row.classList.add('is-known');
-    row.querySelector('.learn-row-know').textContent = 'Known \u2713';
+    btn.textContent = 'Known \u2713';
+    btn.disabled = true;
     refreshLearnStats();
   });
   return row;

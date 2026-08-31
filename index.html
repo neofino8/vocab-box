@@ -103,10 +103,14 @@
     position:absolute; top:14px; right:16px;
     font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--card-ink-soft);
   }
-  .learn-new{
-    position:absolute; top:12px; left:16px;
+  .learn-new, .learn-row-new{
     font-size:9.5px; letter-spacing:0.7px; text-transform:uppercase;
     background:var(--teal); color:#fff; padding:3px 9px; border-radius:20px;
+  }
+  .learn-new{ position:absolute; top:12px; left:16px; }
+  .learn-row-new{
+    display:inline-block; vertical-align:middle; margin-left:6px;
+    font-family:'Inter',sans-serif; font-weight:500;
   }
   .learn-word{
     font-family:'Source Serif 4', serif; font-size:36px; font-weight:600; line-height:1.15;
@@ -588,6 +592,39 @@
     .landing-actions{ flex-direction:row; }
     .landing-actions button{ flex:1; }
   }
+  /* Learn — list view */
+  .learn-list{
+    width:100%; max-height:56vh; min-height:170px; overflow-y:auto;
+    background:var(--panel); border-radius:8px;
+    transition:background-color .3s ease;
+  }
+  .learn-row{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 12px; border-bottom:1px solid var(--line);
+  }
+  .learn-row:last-child{ border-bottom:none; }
+  .learn-row-n{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--soft);
+    min-width:20px; text-align:right; flex-shrink:0;
+  }
+  .learn-row-main{ flex:1; min-width:0; }
+  .learn-row-word{
+    font-family:'Source Serif 4', serif; font-size:16px; font-weight:600;
+    line-height:1.3; overflow-wrap:anywhere;
+  }
+  .learn-row-trans{
+    font-size:12.5px; color:var(--soft); line-height:1.45;
+    margin-top:2px; overflow-wrap:anywhere;
+  }
+  .learn-row-know{
+    flex-shrink:0; padding:9px 11px; font-size:11.5px; font-weight:600;
+    background:var(--teal-light); color:var(--teal);
+  }
+  .learn-row-know:hover{ filter:brightness(0.96); }
+  .learn-row.is-known .learn-row-know{
+    background:transparent; border:1px solid var(--line);
+    color:var(--soft); font-weight:500;
+  }
 </style>
 </head>
 <body>
@@ -632,6 +669,7 @@
     <button class="chip" id="dirChip">Direction: word → translation</button>
     <button class="chip" id="typeChip">Typing: off</button>
     <button class="chip" id="voiceChip">Voice: American</button>
+    <button class="chip" id="viewChip">View: Cards</button>
   </div>
 
   <div class="stats-panel" id="statsPanel">
@@ -741,7 +779,7 @@ let flipped = false;
 let practiceMode = false;
 let answered = false;
 let lastAnswerCorrect = null;
-let settings = { direction:'normal', typing:false, voice:'en-US' };
+let settings = { direction:'normal', typing:false, voice:'en-US', learnView:'cards' };
 let activity = {};
 
 function loadAll(){
@@ -1365,6 +1403,7 @@ function setMode(m){
   });
   if(m === 'review'){ buildQueue(); current = null; }
   if(m === 'learn'){ buildLearnList(); }
+  renderChips();
   renderCard(false);
 }
 
@@ -1372,6 +1411,57 @@ function buildLearnList(){
   const unseen = cards.filter(c => !c.seen);
   learnList = unseen.length ? unseen.concat(cards.filter(c => c.seen)) : cards.slice();
   learnIdx = 0;
+}
+
+function learnStatsHtml(){
+  return '<div class="learn-stats">' +
+    '<div class="learn-stat"><div class="v" id="lsNew">' + cards.filter(x=>!x.seen).length + '</div><div class="k">new</div></div>' +
+    '<div class="learn-stat"><div class="v" id="lsSeen">' + cards.filter(x=>x.seen).length + '</div><div class="k">introduced</div></div>' +
+    '<div class="learn-stat"><div class="v" id="lsMastered">' + cards.filter(x=>x.box===5).length + '</div><div class="k">mastered</div></div>' +
+  '</div>';
+}
+
+function refreshLearnStats(){
+  const n = document.getElementById('lsNew');
+  if(!n) return;
+  n.textContent = cards.filter(x=>!x.seen).length;
+  document.getElementById('lsSeen').textContent = cards.filter(x=>x.seen).length;
+  document.getElementById('lsMastered').textContent = cards.filter(x=>x.box===5).length;
+}
+
+function learnRow(c, i){
+  const row = document.createElement('div');
+  row.className = 'learn-row' + (c.seen ? ' is-known' : '');
+  row.innerHTML =
+    '<span class="learn-row-n">' + (i+1) + '</span>' +
+    '<div class="learn-row-main">' +
+      '<div class="learn-row-word">' + escapeHtml(c.word) +
+        (c.seen ? '' : '<span class="learn-row-new">new</span>') +
+      '</div>' +
+      '<div class="learn-row-trans">' + escapeHtml(c.translation) + '</div>' +
+    '</div>' +
+    '<button class="learn-row-know">' + (c.seen ? 'Known \u2713' : 'I know it') + '</button>';
+  row.querySelector('.learn-row-know').addEventListener('click', ()=>{
+    markKnown(c, 3);
+    // Update this row only, so the list does not jump under the reader.
+    const badge = row.querySelector('.learn-row-new');
+    if(badge) badge.remove();
+    row.classList.add('is-known');
+    row.querySelector('.learn-row-know').textContent = 'Known \u2713';
+    refreshLearnStats();
+  });
+  return row;
+}
+
+function renderLearnList(stage){
+  const wrap = document.createElement('div');
+  wrap.style.width = '100%';
+  const list = document.createElement('div');
+  list.className = 'learn-list';
+  learnList.forEach((c, i)=> list.appendChild(learnRow(c, i)));
+  wrap.appendChild(list);
+  wrap.insertAdjacentHTML('beforeend', learnStatsHtml());
+  stage.appendChild(wrap);
 }
 
 function renderLearn(){
@@ -1385,6 +1475,7 @@ function renderLearn(){
     return;
   }
   if(!learnList.length) buildLearnList();
+  if(settings.learnView === 'list'){ renderLearnList(stage); return; }
   if(learnIdx >= learnList.length) learnIdx = learnList.length - 1;
   if(learnIdx < 0) learnIdx = 0;
   const c = learnList[learnIdx];
@@ -1405,11 +1496,7 @@ function renderLearn(){
       '<button class="btn-know" id="learnKnow">I know it ✓</button>' +
       '<button class="btn-nav" id="learnNext"' + (learnIdx>=learnList.length-1?' disabled':'') + '>→</button>' +
     '</div>' +
-    '<div class="learn-stats">' +
-      '<div class="learn-stat"><div class="v">' + cards.filter(x=>!x.seen).length + '</div><div class="k">new</div></div>' +
-      '<div class="learn-stat"><div class="v">' + cards.filter(x=>x.seen).length + '</div><div class="k">introduced</div></div>' +
-      '<div class="learn-stat"><div class="v">' + cards.filter(x=>x.box===5).length + '</div><div class="k">mastered</div></div>' +
-    '</div>';
+    learnStatsHtml();
   stage.appendChild(wrap);
 
   const sp = wrap.querySelector('#learnSpeak');
@@ -1420,7 +1507,7 @@ function renderLearn(){
   wrap.querySelector('#learnPractice').addEventListener('click', ()=>introduce(c, 1));
 }
 
-function introduce(card, box){
+function markKnown(card, box){
   card.seen = true;
   card.box = box;
   card.due = box === 1 ? Date.now() : Date.now() + INTERVAL_DAYS[box] * DAY;
@@ -1428,6 +1515,10 @@ function introduce(card, box){
   renderStats();
   renderStatsPanel();
   renderWordList();
+}
+
+function introduce(card, box){
+  markKnown(card, box);
   if(learnIdx < learnList.length - 1) learnIdx++;
   renderLearn();
 }
@@ -1825,6 +1916,10 @@ function renderChips(){
   const vc = document.getElementById('voiceChip');
   vc.textContent = 'Voice: ' + (settings.voice === 'en-GB' ? 'British' : 'American');
   vc.classList.toggle('on', settings.voice === 'en-GB');
+  const vw = document.getElementById('viewChip');
+  vw.textContent = 'View: ' + (settings.learnView === 'list' ? 'List' : 'Cards');
+  vw.classList.toggle('on', settings.learnView === 'list');
+  vw.style.display = mode === 'learn' ? '' : 'none';
 }
 
 document.getElementById('dirChip').addEventListener('click', ()=>{
@@ -1835,6 +1930,12 @@ document.getElementById('dirChip').addEventListener('click', ()=>{
   renderCard(false);
 });
 
+document.getElementById('viewChip').addEventListener('click', ()=>{
+  settings.learnView = settings.learnView === 'list' ? 'cards' : 'list';
+  saveSettings();
+  renderChips();
+  renderLearn();
+});
 document.getElementById('typeChip').addEventListener('click', ()=>{
   settings.typing = !settings.typing;
   saveSettings();

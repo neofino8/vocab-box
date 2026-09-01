@@ -626,11 +626,25 @@
     background:transparent; border:1px solid var(--line);
     color:var(--soft); font-weight:500;
   }
+  /* Load-in. Content is visible by default and the animation only supplies
+     its own start state, so nothing depends on the animation running. */
+  @media (prefers-reduced-motion: no-preference){
+    @keyframes riseIn{
+      from{ opacity:0; transform:translateY(8px); }
+      to{ opacity:1; transform:translateY(0); }
+    }
+    .anim-1, .anim-2, .anim-3, .anim-4{
+      animation:riseIn .3s ease-out backwards;
+    }
+    .anim-2{ animation-delay:.06s; }
+    .anim-3{ animation-delay:.12s; }
+    .anim-4{ animation-delay:.18s; }
+  }
 </style>
 </head>
 <body>
 <div class="app">
-  <div class="title-row">
+  <div class="title-row anim-1">
     <h1>Vocab Box</h1>
     <div class="header-btns">
       <button class="about-link" id="aboutLink">About</button>
@@ -642,31 +656,31 @@
       </button>
     </div>
   </div>
-  <p class="subtitle">Flashcards filed by how well you know them <span style="opacity:0.45;font-size:11px;">· v2.3</span></p>
+  <p class="subtitle anim-1">Flashcards filed by how well you know them <span style="opacity:0.45;font-size:11px;">· v2.3</span></p>
 
   <section class="landing" id="landing">
-    <h2 class="landing-title">Vocab Box</h2>
-    <p class="landing-tagline">Learn words and actually remember them.</p>
-    <p class="landing-lede">Vocab Box uses the Leitner system: words you know come back rarely, words you forget come back tomorrow. Reviewing something just before you&rsquo;d forget it is what moves it into long-term memory.</p>
-    <ul class="landing-points">
+    <h2 class="landing-title anim-1">Vocab Box</h2>
+    <p class="landing-tagline anim-1">Learn words and actually remember them.</p>
+    <p class="landing-lede anim-2">Vocab Box uses the Leitner system: words you know come back rarely, words you forget come back tomorrow. Reviewing something just before you&rsquo;d forget it is what moves it into long-term memory.</p>
+    <ul class="landing-points anim-3">
       <li><b>Your words.</b> Paste any list, any language pair. Not someone else&rsquo;s curriculum.</li>
       <li><b>Four ways to study.</b> Learn, review, quiz, and a 60-second match challenge.</li>
       <li><b>Private and free.</b> No account, no cost. Everything stays in your browser.</li>
     </ul>
-    <div class="landing-actions">
+    <div class="landing-actions anim-4">
       <button class="btn-landing" id="landingSample">Start with 20 sample words</button>
       <button class="btn-landing-alt" id="landingAdd">Add my own list</button>
     </div>
   </section>
 
-  <div class="mode-tabs">
+  <div class="mode-tabs anim-2">
     <button class="tab-btn" data-mode="learn">Learn</button>
     <button class="tab-btn on" data-mode="review">Review</button>
     <button class="tab-btn" data-mode="quiz">Quiz</button>
     <button class="tab-btn" data-mode="match">Match</button>
   </div>
 
-  <div class="mode-chips">
+  <div class="mode-chips anim-2">
     <button class="chip" id="dirChip">Direction: word → translation</button>
     <button class="chip" id="typeChip">Typing: off</button>
     <button class="chip" id="voiceChip">Voice: American</button>
@@ -709,15 +723,15 @@
     </div>
   </div>
 
-  <div class="drawers" id="drawers"></div>
-  <div class="statline">
+  <div class="drawers anim-3" id="drawers"></div>
+  <div class="statline anim-3">
     <span id="totalline">0 cards</span>
     <span class="due" id="dueline">0 due today</span>
   </div>
 
-  <div class="stage" id="stage"></div>
+  <div class="stage anim-4" id="stage"></div>
 
-  <button class="toggle-add" id="toggleAdd">+ Add / manage words</button>
+  <button class="toggle-add anim-4" id="toggleAdd">+ Add / manage words</button>
   <div class="add-panel" id="addPanel">
     <p>Paste your list, one per line: word, dash, translation. Numbers are optional.<br>Example — reside — проживать</p>
     <textarea id="bulkInput" placeholder="reside — проживать

@@ -803,15 +803,17 @@ const CARD_IMAGE_KEY = 'vocab-box-card-image';
 const DAY = 86400000;
 const INTERVAL_DAYS = {1:1, 2:2, 3:4, 4:7, 5:14};
 
+// `soft` is the muted text colour. It is drawn on the theme's panel, the
+// lightest surface it sits on, so it must reach 4.5:1 against `panel`.
 const THEMES = [
-  {id:'slate',  key:'thSlate',  bg:'#182027', panel:'#202A32', accent:'#C99A3E'},
-  {id:'night',  key:'thNight',  bg:'#101014', panel:'#1A1A22', accent:'#8B7FD4'},
-  {id:'forest', key:'thForest', bg:'#16241C', panel:'#1F3028', accent:'#7FB069'},
-  {id:'plum',   key:'thPlum',   bg:'#221826', panel:'#2E2134', accent:'#D48FB8'},
-  {id:'sand',   key:'thSand',   bg:'#4A4030', panel:'#584D3B', accent:'#E8C468'},
-  {id:'ocean',  key:'thOcean',  bg:'#132836', panel:'#1C3544', accent:'#5FB3CE'},
-  {id:'wine',   key:'thWine',   bg:'#2E161B', panel:'#3C2027', accent:'#E0868E'},
-  {id:'coal',   key:'thCoal',   bg:'#1E1E1E', panel:'#292929', accent:'#B8B8B8'}
+  {id:'slate',  key:'thSlate',  bg:'#182027', panel:'#202A32', accent:'#C99A3E', soft:'#8A97A3'},
+  {id:'night',  key:'thNight',  bg:'#101014', panel:'#1A1A22', accent:'#8B7FD4', soft:'#8A97A3'},
+  {id:'forest', key:'thForest', bg:'#16241C', panel:'#1F3028', accent:'#7FB069', soft:'#8A97A3'},
+  {id:'plum',   key:'thPlum',   bg:'#221826', panel:'#2E2134', accent:'#D48FB8', soft:'#8A97A3'},
+  {id:'sand',   key:'thSand',   bg:'#4A4030', panel:'#584D3B', accent:'#E8C468', soft:'#BBC3CA'},
+  {id:'ocean',  key:'thOcean',  bg:'#132836', panel:'#1C3544', accent:'#5FB3CE', soft:'#909DA8'},
+  {id:'wine',   key:'thWine',   bg:'#2E161B', panel:'#3C2027', accent:'#E0868E', soft:'#8A97A3'},
+  {id:'coal',   key:'thCoal',   bg:'#1E1E1E', panel:'#292929', accent:'#B8B8B8', soft:'#8A97A3'}
 ];
 
 const CARD_COLORS = [
@@ -1309,6 +1311,7 @@ function applyTheme(){
   root.setProperty('--bg', theme.bg);
   root.setProperty('--panel', theme.panel);
   root.setProperty('--accent', theme.accent);
+  root.setProperty('--soft', theme.soft);
   if(bgImage){
     document.body.style.backgroundImage = 'url(' + bgImage + ')';
     document.body.classList.add('has-image');

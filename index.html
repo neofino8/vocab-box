@@ -400,12 +400,12 @@
     border-radius:6px; font-size:13px;
   }
   .toggle-add:hover{ background:var(--panel); }
-  .add-panel, .theme-panel, .stats-panel, .lang-panel{
+  .add-panel, .theme-panel, .stats-panel{
     margin-top:12px; background:var(--panel); border-radius:8px; padding:16px;
     display:none;
     transition:background-color .3s ease;
   }
-  .add-panel.open, .theme-panel.open, .stats-panel.open, .lang-panel.open{ display:block; }
+  .add-panel.open, .theme-panel.open, .stats-panel.open{ display:block; }
   .add-panel p, .theme-panel p{ font-size:12px; color:var(--soft); margin:0 0 10px; line-height:1.5; }
   textarea{
     width:100%; min-height:120px; background:rgba(0,0,0,0.28); color:var(--paper);
@@ -544,12 +544,11 @@
   body.landing-on .toggle-add,
   body.landing-on .add-panel,
   body.landing-on .stats-panel,
-  body.landing-on .theme-panel,
-  body.landing-on .lang-panel{ display:none; }
+  body.landing-on .theme-panel{ display:none; }
   .about-link{
     background:transparent; border:none; color:var(--soft);
     font-family:'Inter',sans-serif; font-size:12.5px;
-    height:38px; padding:0 4px;
+    min-height:38px; padding:0 4px;
     display:flex; align-items:center;
     text-decoration:underline; text-underline-offset:2px;
   }
@@ -649,18 +648,36 @@
     .anim-3{ animation-delay:.12s; }
     .anim-4{ animation-delay:.18s; }
   }
-  .lang-options{ display:flex; flex-wrap:wrap; gap:8px; }
-  .lang-option{ padding:9px 16px; font-size:13px; }
-  .lang-option.on{ font-weight:600; }
-  /* Russian and Uzbek labels are longer than the English ones; let the header
-     shrink rather than push itself past the viewport. */
+  /* Language switcher: one pill of code segments, sized to sit with the icon
+     buttons. Colours come from the theme variables, accent included. */
+  .lang-pill{
+    display:flex; align-items:stretch; flex-shrink:0;
+    height:38px; padding:2px; gap:0;
+    background:var(--panel); border:1px solid var(--line); border-radius:20px;
+  }
+  .lang-seg{
+    background:transparent; color:var(--soft);
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; font-weight:500;
+    letter-spacing:.7px; padding:0 7px; border-radius:16px;
+  }
+  .lang-seg:not(.on):hover{ color:var(--paper); }
+  .lang-seg.on{ background:var(--accent); color:var(--ink); }
+  /* A phone-width row cannot hold the title, the language pill, both icon
+     buttons and a readable About label, so About drops to its own line. */
   .title-row{ gap:8px; }
-  h1{ flex-shrink:0; }
-  .header-btns{ min-width:0; flex-shrink:1; }
-  .about-link{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  @media (max-width:430px){
+  h1{ flex-shrink:0; margin-right:auto; }
+  .header-btns{ flex-shrink:0; }
+  .about-link{
+    min-width:0; white-space:normal; line-height:1.15;
+    text-align:right; justify-content:flex-end;
+  }
+  /* Russian About only fits beside the pill from ~454px, so the phone layout
+     runs a little past typical phone widths. */
+  @media (max-width:460px){
     h1{ font-size:21px; }
-    .about-link{ font-size:11.5px; }
+    .title-row{ flex-wrap:wrap; row-gap:0; }
+    .title-row::after{ content:''; flex-basis:100%; order:1; }
+    .about-link{ order:2; margin-left:auto; min-height:24px; padding:0 0 0 12px; font-size:11.5px; }
   }
 </style>
 </head>
@@ -668,11 +685,9 @@
 <div class="app">
   <div class="title-row anim-1">
     <h1>Vocab Box</h1>
+    <button class="about-link" id="aboutLink" data-i18n="about">About</button>
     <div class="header-btns">
-      <button class="about-link" id="aboutLink" data-i18n="about">About</button>
-      <button class="icon-btn" id="langBtn" data-i18n-title="language" data-i18n-aria="language">
-        <svg viewBox="0 0 19 19" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9.5" cy="9.5" r="8"/><path d="M1.5 9.5h16"/><ellipse cx="9.5" cy="9.5" rx="3.6" ry="8"/></svg>
-      </button>
+      <div class="lang-pill" id="langOptions" role="group" data-i18n-aria="language"></div>
       <button class="icon-btn" id="statsBtn" data-i18n-title="statsTitle" data-i18n-aria="statsTitle">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="5" y1="20" x2="5" y2="12"/><line x1="12" y1="20" x2="12" y2="6"/><line x1="19" y1="20" x2="19" y2="10"/></svg>
       </button>
@@ -710,10 +725,6 @@
     <button class="chip" id="typeChip">Typing: off</button>
     <button class="chip" id="voiceChip">Voice: American</button>
     <button class="chip" id="viewChip">View: Cards</button>
-  </div>
-
-  <div class="lang-panel" id="langPanel">
-    <div class="lang-options" id="langOptions" role="group" data-i18n-aria="language"></div>
   </div>
 
   <div class="stats-panel" id="statsPanel">
@@ -824,10 +835,11 @@ let practiceMode = false;
 let answered = false;
 let lastAnswerCorrect = null;
 /* ---------- Languages ----------
-   To add a language, add one object here: `name` for the switcher, written
-   in the language's own script, `locale` for Intl.PluralRules, `sampleDeck`
-   naming an entry in SAMPLE_DECKS, `t` for strings and `plurals` for
-   counted nouns.
+   To add a language, add one object here: `name` in the language's own
+   script, `locale` for Intl.PluralRules, `sampleDeck` naming an entry in
+   SAMPLE_DECKS, `t` for strings and `plurals` for counted nouns. The
+   switcher shows the key as a code and labels it with `lang_<key>` from the
+   active interface, so add that name to every language's `t` too.
    Plural forms are keyed by CLDR category; a language with a single form
    only needs `other`, and plural() falls back to it. */
 const I18N = {
@@ -843,6 +855,7 @@ const I18N = {
       docTitle: 'Vocab Box — spaced-repetition flashcards',
       subtitle: 'Flashcards filed by how well you know them',
       about: 'About', statsTitle: 'Stats', themeTitle: 'Appearance', language: 'Language',
+      lang_en: 'English', lang_ru: 'Russian', lang_uz: 'Uzbek',
 
       landingTagline: 'Learn words and actually remember them.',
       landingLede: 'Vocab Box uses the Leitner system: words you know come back rarely, words you forget come back tomorrow. Reviewing something just before you’d forget it is what moves it into long-term memory.',
@@ -939,6 +952,7 @@ const I18N = {
       docTitle: 'Vocab Box — карточки для запоминания слов',
       subtitle: 'Карточки, разложенные по уровню знания',
       about: 'О приложении', statsTitle: 'Статистика', themeTitle: 'Оформление', language: 'Язык',
+      lang_en: 'Английский', lang_ru: 'Русский', lang_uz: 'Узбекский',
 
       landingTagline: 'Учите слова — и правда их запоминайте.',
       landingLede: 'Vocab Box работает по системе Лейтнера: слова, которые вы знаете, возвращаются редко, а забытые — уже завтра. Повторение прямо перед тем, как забыть, и переводит слово в долговременную память.',
@@ -1037,6 +1051,7 @@ const I18N = {
       docTitle: 'Vocab Box — intervalli takrorlash kartochkalari',
       subtitle: 'Qanchalik yaxshi bilishingizga qarab saralangan kartochkalar',
       about: 'Ilova haqida', statsTitle: 'Statistika', themeTitle: 'Dizayn', language: 'Til',
+      lang_en: 'Ingliz tili', lang_ru: 'Rus tili', lang_uz: 'Oʻzbek tili',
 
       landingTagline: 'Soʻzlarni oʻrganing va haqiqatan ham yodda saqlang.',
       landingLede: 'Vocab Box Leytner tizimida ishlaydi: siz biladigan soʻzlar kamdan-kam qaytadi, unutganlaringiz esa ertaga qaytadi. Soʻzni unutishingizdan sal oldin takrorlash uni uzoq muddatli xotiraga oʻtkazadi.',
@@ -2404,14 +2419,12 @@ document.getElementById('deleteAllBtn').addEventListener('click', deleteAllWords
 document.getElementById('themeBtn').addEventListener('click', ()=>{
   document.getElementById('themePanel').classList.toggle('open');
   document.getElementById('statsPanel').classList.remove('open');
-  document.getElementById('langPanel').classList.remove('open');
 });
 
 document.getElementById('statsBtn').addEventListener('click', ()=>{
   renderStatsPanel();
   document.getElementById('statsPanel').classList.toggle('open');
   document.getElementById('themePanel').classList.remove('open');
-  document.getElementById('langPanel').classList.remove('open');
 });
 
 document.getElementById('uploadBtn').addEventListener('click', ()=>{
@@ -2500,7 +2513,6 @@ function showLanding(){
   document.getElementById('addPanel').classList.remove('open');
   document.getElementById('themePanel').classList.remove('open');
   document.getElementById('statsPanel').classList.remove('open');
-  document.getElementById('langPanel').classList.remove('open');
   document.body.classList.add('landing-on');
   window.scrollTo(0, 0);
 }
@@ -2509,36 +2521,37 @@ function hideLanding(){
   document.body.classList.remove('landing-on');
 }
 
-// Names stay in their own script so each is recognisable whatever the
-// interface language currently is.
+// The visible code is terse, so each segment's label names the language in
+// the interface's own language, falling back to English, then to its own name.
+function langLabel(code){
+  const key = 'lang_' + code;
+  return (I18N[lang] || I18N.en).t[key] || I18N.en.t[key] || I18N[code].name;
+}
+
 function renderLangOptions(){
   const wrap = document.getElementById('langOptions');
   wrap.innerHTML = '';
   Object.keys(I18N).forEach(code=>{
     const b = document.createElement('button');
-    b.className = 'chip lang-option' + (code === lang ? ' on' : '');
-    b.lang = langTag(code);
-    b.textContent = I18N[code].name;
+    const label = langLabel(code);
+    b.className = 'lang-seg' + (code === lang ? ' on' : '');
+    b.textContent = code.toUpperCase();
+    b.title = label;
+    b.setAttribute('aria-label', label);
     b.setAttribute('aria-pressed', code === lang ? 'true' : 'false');
     b.addEventListener('click', ()=>{
       const hadFocus = document.activeElement === b;
       setLang(code, true);
       relocalize();
-      // The options were rebuilt; keep keyboard focus on the chosen language.
+      // The segments were rebuilt; keep keyboard focus on the chosen language.
       if(hadFocus){
-        const active = document.querySelector('#langOptions .lang-option.on');
+        const active = document.querySelector('#langOptions .lang-seg.on');
         if(active) active.focus();
       }
     });
     wrap.appendChild(b);
   });
 }
-
-document.getElementById('langBtn').addEventListener('click', ()=>{
-  document.getElementById('langPanel').classList.toggle('open');
-  document.getElementById('statsPanel').classList.remove('open');
-  document.getElementById('themePanel').classList.remove('open');
-});
 
 document.getElementById('aboutLink').addEventListener('click', showLanding);
 

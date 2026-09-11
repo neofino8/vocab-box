@@ -311,6 +311,7 @@
     position:absolute; top:-12px; left:20px;
     background:var(--navy); color:var(--paper);
     font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.6px;
+    text-transform:uppercase;
     padding:4px 10px; border-radius:3px 3px 0 0;
   }
   .tab.practice{ background:var(--teal); }
@@ -647,6 +648,25 @@
     .anim-3{ animation-delay:.12s; }
     .anim-4{ animation-delay:.18s; }
   }
+  .lang-select{
+    background:var(--panel); border:1px solid var(--line); color:var(--paper);
+    font-family:'Inter',sans-serif; font-size:12px;
+    height:38px; padding:0 6px; border-radius:8px; cursor:pointer;
+    -webkit-appearance:none; appearance:none;
+    text-align:center;
+  }
+  .lang-select:hover{ filter:brightness(1.15); }
+  /* Russian and Uzbek labels are longer than the English ones; let the header
+     shrink rather than push itself past the viewport. */
+  .title-row{ gap:8px; }
+  h1{ flex-shrink:0; }
+  .header-btns{ min-width:0; flex-shrink:1; }
+  .about-link{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  @media (max-width:430px){
+    h1{ font-size:21px; }
+    .about-link{ font-size:11.5px; }
+    .lang-select{ font-size:11.5px; padding:0 5px; }
+  }
 </style>
 </head>
 <body>
@@ -654,37 +674,38 @@
   <div class="title-row anim-1">
     <h1>Vocab Box</h1>
     <div class="header-btns">
-      <button class="about-link" id="aboutLink">About</button>
-      <button class="icon-btn" id="statsBtn" title="Stats" aria-label="Stats">
+      <button class="about-link" id="aboutLink" data-i18n="about">About</button>
+      <select class="lang-select" id="langSelect" data-i18n-title="language" data-i18n-aria="language"></select>
+      <button class="icon-btn" id="statsBtn" data-i18n-title="statsTitle" data-i18n-aria="statsTitle">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="5" y1="20" x2="5" y2="12"/><line x1="12" y1="20" x2="12" y2="6"/><line x1="19" y1="20" x2="19" y2="10"/></svg>
       </button>
-      <button class="icon-btn" id="themeBtn" title="Appearance" aria-label="Appearance">
+      <button class="icon-btn" id="themeBtn" data-i18n-title="themeTitle" data-i18n-aria="themeTitle">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 1 0-18c4.97 0 9 3.58 9 8 0 1.66-1.34 3-3 3h-2.2c-1 0-1.8.8-1.8 1.8 0 .45.17.86.44 1.18.28.33.46.74.46 1.22A1.8 1.8 0 0 1 13.1 21H12z"/><circle cx="7.5" cy="10.5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="7.5" r="1" fill="currentColor" stroke="none"/><circle cx="16.5" cy="10.5" r="1" fill="currentColor" stroke="none"/></svg>
       </button>
     </div>
   </div>
-  <p class="subtitle anim-1">Flashcards filed by how well you know them <span style="opacity:0.45;font-size:11px;">· v2.3</span></p>
+  <p class="subtitle anim-1"><span data-i18n="subtitle">Flashcards filed by how well you know them</span> <span style="opacity:0.45;font-size:11px;">· v2.3</span></p>
 
   <section class="landing" id="landing">
     <h2 class="landing-title anim-1">Vocab Box</h2>
-    <p class="landing-tagline anim-1">Learn words and actually remember them.</p>
-    <p class="landing-lede anim-2">Vocab Box uses the Leitner system: words you know come back rarely, words you forget come back tomorrow. Reviewing something just before you&rsquo;d forget it is what moves it into long-term memory.</p>
+    <p class="landing-tagline anim-1" data-i18n="landingTagline">Learn words and actually remember them.</p>
+    <p class="landing-lede anim-2" data-i18n="landingLede">Vocab Box uses the Leitner system: words you know come back rarely, words you forget come back tomorrow. Reviewing something just before you&rsquo;d forget it is what moves it into long-term memory.</p>
     <ul class="landing-points anim-3">
-      <li><b>Your words.</b> Paste any list, any language pair. Not someone else&rsquo;s curriculum.</li>
-      <li><b>Four ways to study.</b> Learn, review, quiz, and a 60-second match challenge.</li>
-      <li><b>Private and free.</b> No account, no cost. Everything stays in your browser.</li>
+      <li><b data-i18n="p1t">Your words.</b> <span data-i18n="p1b">Paste any list, any language pair. Not someone else&rsquo;s curriculum.</span></li>
+      <li><b data-i18n="p2t">Four ways to study.</b> <span data-i18n="p2b">Learn, review, quiz, and a 60-second match challenge.</span></li>
+      <li><b data-i18n="p3t">Private and free.</b> <span data-i18n="p3b">No account, no cost. Everything stays in your browser.</span></li>
     </ul>
     <div class="landing-actions anim-4">
-      <button class="btn-landing" id="landingSample">Start with 20 sample words</button>
-      <button class="btn-landing-alt" id="landingAdd">Add my own list</button>
+      <button class="btn-landing" id="landingSample" data-i18n="landingSample">Start with 20 sample words</button>
+      <button class="btn-landing-alt" id="landingAdd" data-i18n="landingAdd">Add my own list</button>
     </div>
   </section>
 
   <div class="mode-tabs anim-2">
-    <button class="tab-btn" data-mode="learn">Learn</button>
-    <button class="tab-btn on" data-mode="review">Review</button>
-    <button class="tab-btn" data-mode="quiz">Quiz</button>
-    <button class="tab-btn" data-mode="match">Match</button>
+    <button class="tab-btn" data-mode="learn" data-i18n="tabLearn">Learn</button>
+    <button class="tab-btn on" data-mode="review" data-i18n="tabReview">Review</button>
+    <button class="tab-btn" data-mode="quiz" data-i18n="tabQuiz">Quiz</button>
+    <button class="tab-btn" data-mode="match" data-i18n="tabMatch">Match</button>
   </div>
 
   <div class="mode-chips anim-2">
@@ -696,36 +717,36 @@
 
   <div class="stats-panel" id="statsPanel">
     <div class="stats-grid">
-      <div class="stat-tile"><div class="v hl" id="stStreak">0</div><div class="k">day streak</div></div>
-      <div class="stat-tile"><div class="v" id="stToday">0</div><div class="k">reviews today</div></div>
-      <div class="stat-tile"><div class="v" id="stWeek">0</div><div class="k">this week</div></div>
-      <div class="stat-tile"><div class="v" id="stTotal">0</div><div class="k">all time</div></div>
-      <div class="stat-tile"><div class="v" id="stMastered">0</div><div class="k">mastered (box 5)</div></div>
-      <div class="stat-tile"><div class="v" id="stCards">0</div><div class="k">total cards</div></div>
+      <div class="stat-tile"><div class="v hl" id="stStreak">0</div><div class="k" data-i18n="stStreak">day streak</div></div>
+      <div class="stat-tile"><div class="v" id="stToday">0</div><div class="k" data-i18n="stToday">reviews today</div></div>
+      <div class="stat-tile"><div class="v" id="stWeek">0</div><div class="k" data-i18n="stWeek">this week</div></div>
+      <div class="stat-tile"><div class="v" id="stTotal">0</div><div class="k" data-i18n="stTotal">all time</div></div>
+      <div class="stat-tile"><div class="v" id="stMastered">0</div><div class="k" data-i18n="stMastered">mastered (box 5)</div></div>
+      <div class="stat-tile"><div class="v" id="stCards">0</div><div class="k" data-i18n="stCards">total cards</div></div>
     </div>
     <div class="backup-row">
-      <button class="btn-secondary" id="exportBtn">Export backup</button>
-      <button class="btn-secondary" id="importBtn">Import</button>
+      <button class="btn-secondary" id="exportBtn" data-i18n="exportBtn">Export backup</button>
+      <button class="btn-secondary" id="importBtn" data-i18n="importBtn">Import</button>
       <input type="file" id="importFile" accept=".json,application/json">
     </div>
     <div class="backup-msg" id="backupMsg"></div>
   </div>
 
   <div class="theme-panel" id="themePanel">
-    <p>Background — pick a theme, or upload your own image.</p>
+    <p data-i18n="themeBg">Background — pick a theme, or upload your own image.</p>
     <div class="swatches" id="swatches"></div>
     <div class="theme-upload-row" style="margin-bottom:18px;">
-      <button class="btn-secondary" id="uploadBtn">Upload image</button>
+      <button class="btn-secondary" id="uploadBtn" data-i18n="uploadImage">Upload image</button>
       <input type="file" id="bgFile" accept="image/*">
     </div>
-    <p>Card color — pick one, choose your own, or use a photo.</p>
+    <p data-i18n="themeCard">Card color — pick one, choose your own, or use a photo.</p>
     <div class="swatches" id="cardSwatches"></div>
     <div class="theme-upload-row">
       <label class="btn-secondary" for="cardColorInput" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;">
-        Custom color <input type="color" id="cardColorInput" value="#EFEAD9" style="width:26px;height:26px;border:none;padding:0;background:none;cursor:pointer;">
+        <span data-i18n="customColor">Custom color</span> <input type="color" id="cardColorInput" value="#EFEAD9" style="width:26px;height:26px;border:none;padding:0;background:none;cursor:pointer;">
       </label>
-      <button class="btn-secondary" id="cardUploadBtn">Upload image</button>
-      <button class="btn-muted" id="clearBgBtn">Reset all</button>
+      <button class="btn-secondary" id="cardUploadBtn" data-i18n="uploadImage">Upload image</button>
+      <button class="btn-muted" id="clearBgBtn" data-i18n="resetAll">Reset all</button>
       <input type="file" id="cardBgFile" accept="image/*" style="display:none;">
     </div>
   </div>
@@ -738,23 +759,23 @@
 
   <div class="stage anim-4" id="stage"></div>
 
-  <button class="toggle-add anim-4" id="toggleAdd">+ Add / manage words</button>
+  <button class="toggle-add anim-4" id="toggleAdd" data-i18n="toggleAdd">+ Add / manage words</button>
   <div class="add-panel" id="addPanel">
-    <p>Paste your list, one per line: word, dash, translation. Numbers are optional.<br>Example — reside — проживать</p>
-    <textarea id="bulkInput" placeholder="reside — проживать
+    <p><span data-i18n="addHelp">Paste your list, one per line: word, dash, translation. Numbers are optional.</span><br><span data-i18n="addExample">Example — reside — проживать</span></p>
+    <textarea id="bulkInput" data-i18n-ph="bulkPh" placeholder="reside — проживать
 remote — отдалённый
 isolation — изоляция"></textarea>
     <div class="add-actions">
       <span class="parse-msg" id="parseMsg"></span>
-      <button class="btn-parse" id="parseBtn">Add to box</button>
+      <button class="btn-parse" id="parseBtn" data-i18n="parseBtn">Add to box</button>
     </div>
     <div class="word-list-head">
       <h3 id="wordListTitle">Your words (<span id="wordCount">0</span>)</h3>
-      <input class="word-filter" id="wordFilter" type="text" placeholder="Filter…">
+      <input class="word-filter" id="wordFilter" type="text" data-i18n-ph="filterPh" placeholder="Filter…">
     </div>
     <div class="undo-row" id="undoRow" style="display:none;"></div>
     <div class="word-list" id="wordList"></div>
-    <button class="btn-delete-all" id="deleteAllBtn">Delete all words</button>
+    <button class="btn-delete-all" id="deleteAllBtn" data-i18n="deleteAllBtn">Delete all words</button>
   </div>
 </div>
 
@@ -771,25 +792,25 @@ const DAY = 86400000;
 const INTERVAL_DAYS = {1:1, 2:2, 3:4, 4:7, 5:14};
 
 const THEMES = [
-  {id:'slate',  label:'Slate',  bg:'#182027', panel:'#202A32', accent:'#C99A3E'},
-  {id:'night',  label:'Night',  bg:'#101014', panel:'#1A1A22', accent:'#8B7FD4'},
-  {id:'forest', label:'Forest', bg:'#16241C', panel:'#1F3028', accent:'#7FB069'},
-  {id:'plum',   label:'Plum',   bg:'#221826', panel:'#2E2134', accent:'#D48FB8'},
-  {id:'sand',   label:'Sand',   bg:'#4A4030', panel:'#584D3B', accent:'#E8C468'},
-  {id:'ocean',  label:'Ocean',  bg:'#132836', panel:'#1C3544', accent:'#5FB3CE'},
-  {id:'wine',   label:'Wine',   bg:'#2E161B', panel:'#3C2027', accent:'#E0868E'},
-  {id:'coal',   label:'Coal',   bg:'#1E1E1E', panel:'#292929', accent:'#B8B8B8'}
+  {id:'slate',  key:'thSlate',  bg:'#182027', panel:'#202A32', accent:'#C99A3E'},
+  {id:'night',  key:'thNight',  bg:'#101014', panel:'#1A1A22', accent:'#8B7FD4'},
+  {id:'forest', key:'thForest', bg:'#16241C', panel:'#1F3028', accent:'#7FB069'},
+  {id:'plum',   key:'thPlum',   bg:'#221826', panel:'#2E2134', accent:'#D48FB8'},
+  {id:'sand',   key:'thSand',   bg:'#4A4030', panel:'#584D3B', accent:'#E8C468'},
+  {id:'ocean',  key:'thOcean',  bg:'#132836', panel:'#1C3544', accent:'#5FB3CE'},
+  {id:'wine',   key:'thWine',   bg:'#2E161B', panel:'#3C2027', accent:'#E0868E'},
+  {id:'coal',   key:'thCoal',   bg:'#1E1E1E', panel:'#292929', accent:'#B8B8B8'}
 ];
 
 const CARD_COLORS = [
-  {id:'#EFEAD9', label:'Paper'},
-  {id:'#F7F7F5', label:'Snow'},
-  {id:'#DCE9E1', label:'Mint'},
-  {id:'#D8E5EF', label:'Sky'},
-  {id:'#F1DEDE', label:'Rose'},
-  {id:'#E6DEEF', label:'Lilac'},
-  {id:'#2A2A28', label:'Charcoal'},
-  {id:'#1D2430', label:'Ink'}
+  {id:'#EFEAD9', key:'cPaper'},
+  {id:'#F7F7F5', key:'cSnow'},
+  {id:'#DCE9E1', key:'cMint'},
+  {id:'#D8E5EF', key:'cSky'},
+  {id:'#F1DEDE', key:'cRose'},
+  {id:'#E6DEEF', key:'cLilac'},
+  {id:'#2A2A28', key:'cCharcoal'},
+  {id:'#1D2430', key:'cInk'}
 ];
 
 const SPEAKER_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>';
@@ -801,7 +822,384 @@ let flipped = false;
 let practiceMode = false;
 let answered = false;
 let lastAnswerCorrect = null;
-let settings = { direction:'normal', typing:false, voice:'en-US', learnView:'cards' };
+/* ---------- Languages ----------
+   To add a language, add one object here: `name` for the switcher, `locale`
+   for Intl.PluralRules, `t` for strings and `plurals` for counted nouns.
+   Plural forms are keyed by CLDR category; a language with a single form
+   only needs `other`, and plural() falls back to it. */
+const I18N = {
+  en: {
+    name: 'English', short: 'EN',
+    locale: 'en',
+    plurals: {
+      word: { one: 'word', other: 'words' },
+      card: { one: 'card', other: 'cards' },
+      pair: { one: 'pair', other: 'pairs' }
+    },
+    t: {
+      docTitle: 'Vocab Box — spaced-repetition flashcards',
+      subtitle: 'Flashcards filed by how well you know them',
+      about: 'About', statsTitle: 'Stats', themeTitle: 'Appearance', language: 'Language',
+
+      landingTagline: 'Learn words and actually remember them.',
+      landingLede: 'Vocab Box uses the Leitner system: words you know come back rarely, words you forget come back tomorrow. Reviewing something just before you’d forget it is what moves it into long-term memory.',
+      p1t: 'Your words.', p1b: 'Paste any list, any language pair. Not someone else’s curriculum.',
+      p2t: 'Four ways to study.', p2b: 'Learn, review, quiz, and a 60-second match challenge.',
+      p3t: 'Private and free.', p3b: 'No account, no cost. Everything stays in your browser.',
+      landingSample: 'Start with 20 sample words', landingAdd: 'Add my own list',
+
+      tabLearn: 'Learn', tabReview: 'Review', tabQuiz: 'Quiz', tabMatch: 'Match',
+      dirNormal: 'Direction: word → translation', dirReverse: 'Direction: translation → word',
+      typingOn: 'Typing: on', typingOff: 'Typing: off',
+      voiceUS: 'Voice: American', voiceGB: 'Voice: British',
+      viewCards: 'View: Cards', viewList: 'View: List',
+
+      stStreak: 'day streak', stToday: 'reviews today', stWeek: 'this week',
+      stTotal: 'all time', stMastered: 'mastered (box 5)', stCards: 'total cards',
+      exportBtn: 'Export backup', importBtn: 'Import',
+      backupDone: 'Backup downloaded.',
+      backupBad: 'Could not read that file. Is it a Vocab Box backup?',
+      imported: '{added} added', importedProgressed: ', {n} progressed',
+
+      themeBg: 'Background — pick a theme, or upload your own image.',
+      themeCard: 'Card color — pick one, choose your own, or use a photo.',
+      uploadImage: 'Upload image', customColor: 'Custom color', resetAll: 'Reset all',
+      imageTooBig: 'That image is too large to save. Try a smaller one.',
+      thSlate:'Slate', thNight:'Night', thForest:'Forest', thPlum:'Plum',
+      thSand:'Sand', thOcean:'Ocean', thWine:'Wine', thCoal:'Coal',
+      cPaper:'Paper', cSnow:'Snow', cMint:'Mint', cSky:'Sky',
+      cRose:'Rose', cLilac:'Lilac', cCharcoal:'Charcoal', cInk:'Ink',
+
+      boxShort: 'box {n}', drawerTitle: 'Show words in box {n}',
+      dueToday: '{n} due today',
+
+      toggleAdd: '+ Add / manage words',
+      addHelp: 'Paste your list, one per line: word, dash, translation. Numbers are optional.',
+      addExample: 'Example — reside — проживать',
+      bulkPh: 'reside — проживать\nremote — отдалённый\nisolation — изоляция',
+      parseBtn: 'Add to box',
+      yourWords: 'Your words ({n})', boxTitle: 'Box {b} ({n})', showAll: 'show all',
+      filterPh: 'Filter…',
+      noWordsYet: 'No words yet.', noWordsInBox: 'No words in this box yet.',
+      noFilterMatch: 'Nothing matches that filter.',
+      deleteAllBtn: 'Delete all words',
+      confirmDeleteAll: 'Delete all {n}? This clears every box.',
+      deletedWord: 'Deleted "{w}"', deletedAll: 'Deleted all {n}', undo: 'Undo',
+      parseNoMatch: 'No lines matched. Use: word — translation',
+      parseAdded: '{n} added', parseAlready: 'already had: ',
+      parseUpdated: 'translation updated: ', parseRepeated: 'repeated in your list: ',
+      andMore: '{shown} +{n} more',
+
+      emptyTitle: 'Your box is empty',
+      emptyBody: 'Add your own word list below, or start with a ready-made one.',
+      sampleBtn: 'Try a sample deck (20 words)',
+      allDoneTitle: 'All done for now',
+      allDoneBody: 'Nothing left due today. Come back tomorrow, or keep going without affecting your boxes.',
+      practiceAnyway: 'Practice anyway',
+      tapToReveal: 'Tap to reveal', orTapToReveal: 'Or tap the card to reveal',
+      typePh: 'Type the answer', check: 'Check',
+      correct: 'Correct', notQuite: 'Not quite',
+      again: 'Again', good: 'Good', pronounce: 'Pronounce', practiceTab: 'Practice',
+
+      newBadge: 'new', iKnowIt: 'I know it', knownTick: 'Known ✓',
+      stillLearning: 'Still learning', learnKnow: 'I know it ✓',
+      lsNew: 'new', lsSeen: 'introduced', lsMastered: 'mastered',
+      nothingToLearn: 'Nothing to learn yet',
+      nothingToLearnBody: 'Add words below, or load the sample deck from Review.',
+
+      chooseTranslation: 'Choose the correct translation',
+      chooseWord: 'Choose the correct word',
+      nextQuestion: 'Next question →',
+
+      matchTitle: '60-second challenge',
+      matchIntro: 'Match each word to its translation as fast as you can. This is just for speed — it does not change your boxes.',
+      start: 'Start', playAgain: 'Play again', matchedLabel: 'matched',
+      pairsMatched: '{n} matched',
+
+      modeQuiz: 'Quiz', modeMatch: 'Speed Match',
+      needAtLeast: 'Need at least {n}',
+      needBody: '{what} needs a few more words to work. You have {n}.',
+      addMoreBelow: ' Add more below.',
+      addMoreOrSample: ' Add more below, or load the sample deck from Review.'
+    }
+  },
+
+  ru: {
+    name: 'Русский', short: 'RU',
+    locale: 'ru',
+    plurals: {
+      word: { one: 'слово', few: 'слова', many: 'слов' },
+      card: { one: 'карточка', few: 'карточки', many: 'карточек' },
+      pair: { one: 'пара', few: 'пары', many: 'пар' }
+    },
+    t: {
+      docTitle: 'Vocab Box — карточки для запоминания слов',
+      subtitle: 'Карточки, разложенные по уровню знания',
+      about: 'О приложении', statsTitle: 'Статистика', themeTitle: 'Оформление', language: 'Язык',
+
+      landingTagline: 'Учите слова — и правда их запоминайте.',
+      landingLede: 'Vocab Box работает по системе Лейтнера: слова, которые вы знаете, возвращаются редко, а забытые — уже завтра. Повторение прямо перед тем, как забыть, и переводит слово в долговременную память.',
+      p1t: 'Ваши слова.', p1b: 'Вставьте любой список, любую пару языков. Никакой чужой программы.',
+      p2t: 'Четыре режима.', p2b: 'Учить, повторять, тест и игра на скорость за 60 секунд.',
+      p3t: 'Бесплатно и приватно.', p3b: 'Без аккаунта и без оплаты. Всё хранится в вашем браузере.',
+      landingSample: 'Начать с 20 готовых слов', landingAdd: 'Добавить свой список',
+
+      tabLearn: 'Учить', tabReview: 'Повтор', tabQuiz: 'Тест', tabMatch: 'Пары',
+      dirNormal: 'Направление: слово → перевод', dirReverse: 'Направление: перевод → слово',
+      typingOn: 'Ввод: вкл', typingOff: 'Ввод: выкл',
+      voiceUS: 'Голос: американский', voiceGB: 'Голос: британский',
+      viewCards: 'Вид: карточки', viewList: 'Вид: список',
+
+      stStreak: 'дней подряд', stToday: 'повторов сегодня', stWeek: 'за неделю',
+      stTotal: 'за всё время', stMastered: 'выучено (ящик 5)', stCards: 'всего карточек',
+      exportBtn: 'Скачать копию', importBtn: 'Загрузить',
+      backupDone: 'Резервная копия скачана.',
+      backupBad: 'Не удалось прочитать файл. Это резервная копия Vocab Box?',
+      imported: 'добавлено: {added}', importedProgressed: ', обновлено: {n}',
+
+      themeBg: 'Фон — выберите тему или загрузите своё изображение.',
+      themeCard: 'Цвет карточки — выберите готовый, свой или фото.',
+      uploadImage: 'Загрузить изображение', customColor: 'Свой цвет', resetAll: 'Сбросить всё',
+      imageTooBig: 'Изображение слишком большое. Попробуйте поменьше.',
+      thSlate:'Графит', thNight:'Ночь', thForest:'Лес', thPlum:'Слива',
+      thSand:'Песок', thOcean:'Океан', thWine:'Вино', thCoal:'Уголь',
+      cPaper:'Бумага', cSnow:'Снег', cMint:'Мята', cSky:'Небо',
+      cRose:'Роза', cLilac:'Сирень', cCharcoal:'Графит', cInk:'Чернила',
+
+      boxShort: 'ящик {n}', drawerTitle: 'Показать слова из ящика {n}',
+      dueToday: '{n} на сегодня',
+
+      toggleAdd: '+ Добавить / изменить слова',
+      addHelp: 'Вставьте список, по одному в строке: слово, тире, перевод. Номера можно оставить.',
+      addExample: 'Пример — reside — проживать',
+      bulkPh: 'reside — проживать\nremote — отдалённый\nisolation — изоляция',
+      parseBtn: 'Добавить в картотеку',
+      yourWords: 'Ваши слова ({n})', boxTitle: 'Ящик {b} ({n})', showAll: 'показать все',
+      filterPh: 'Фильтр…',
+      noWordsYet: 'Слов пока нет.', noWordsInBox: 'В этом ящике пока пусто.',
+      noFilterMatch: 'Ничего не найдено.',
+      deleteAllBtn: 'Удалить все слова',
+      confirmDeleteAll: 'Удалить все {n}? Это очистит все ящики.',
+      deletedWord: 'Удалено «{w}»', deletedAll: 'Удалено {n}', undo: 'Вернуть',
+      parseNoMatch: 'Ни одна строка не подошла. Формат: слово — перевод',
+      parseAdded: 'добавлено: {n}', parseAlready: 'уже было: ',
+      parseUpdated: 'перевод обновлён: ', parseRepeated: 'повторяется в списке: ',
+      andMore: '{shown} и ещё {n}',
+
+      emptyTitle: 'Картотека пуста',
+      emptyBody: 'Добавьте свой список ниже или начните с готового.',
+      sampleBtn: 'Пробный набор (20 слов)',
+      allDoneTitle: 'На сегодня всё',
+      allDoneBody: 'Больше ничего не запланировано. Возвращайтесь завтра или продолжайте — на ящики это не повлияет.',
+      practiceAnyway: 'Всё равно позаниматься',
+      tapToReveal: 'Нажмите, чтобы открыть', orTapToReveal: 'Или нажмите на карточку',
+      typePh: 'Введите ответ', check: 'Проверить',
+      correct: 'Верно', notQuite: 'Не совсем',
+      again: 'Повторить', good: 'Знаю', pronounce: 'Произнести', practiceTab: 'Тренировка',
+
+      newBadge: 'новое', iKnowIt: 'Знаю', knownTick: 'Знаю ✓',
+      stillLearning: 'Ещё учу', learnKnow: 'Знаю ✓',
+      lsNew: 'новых', lsSeen: 'начато', lsMastered: 'выучено',
+      nothingToLearn: 'Пока нечего учить',
+      nothingToLearnBody: 'Добавьте слова ниже или загрузите пробный набор из «Повтора».',
+
+      chooseTranslation: 'Выберите правильный перевод',
+      chooseWord: 'Выберите правильное слово',
+      nextQuestion: 'Дальше →',
+
+      matchTitle: 'Поединок на 60 секунд',
+      matchIntro: 'Соедините слова с переводами как можно быстрее. Это только на скорость — на ящики не влияет.',
+      start: 'Начать', playAgain: 'Ещё раз', matchedLabel: 'совпало',
+      pairsMatched: 'совпало: {n}',
+
+      modeQuiz: 'Тест', modeMatch: 'Игра на скорость',
+      needAtLeast: 'Нужно минимум {n}',
+      needBody: '{what} заработает, когда слов станет больше. Сейчас: {n}.',
+      addMoreBelow: ' Добавьте ещё ниже.',
+      addMoreOrSample: ' Добавьте ещё ниже или загрузите пробный набор из «Повтора».'
+    }
+  },
+
+  uz: {
+    name: 'Oʻzbekcha', short: 'UZ',
+    locale: 'uz',
+    /* Uzbek does not change the noun for number, so one form covers every
+       count; plural() falls back to `other` for any CLDR category. */
+    plurals: {
+      word: { other: 'ta soʻz' },
+      card: { other: 'ta kartochka' },
+      pair: { other: 'ta juftlik' }
+    },
+    t: {
+      docTitle: 'Vocab Box — intervalli takrorlash kartochkalari',
+      subtitle: 'Qanchalik yaxshi bilishingizga qarab saralangan kartochkalar',
+      about: 'Ilova haqida', statsTitle: 'Statistika', themeTitle: 'Dizayn', language: 'Til',
+
+      landingTagline: 'Soʻzlarni oʻrganing va haqiqatan ham yodda saqlang.',
+      landingLede: 'Vocab Box Leytner tizimida ishlaydi: siz biladigan soʻzlar kamdan-kam qaytadi, unutganlaringiz esa ertaga qaytadi. Soʻzni unutishingizdan sal oldin takrorlash uni uzoq muddatli xotiraga oʻtkazadi.',
+      p1t: 'Oʻz soʻzlaringiz.', p1b: 'Istalgan roʻyxatni, istalgan til juftligini joylashtiring. Birovning dasturi emas.',
+      p2t: 'Toʻrt xil mashq.', p2b: 'Oʻrganish, takrorlash, test va 60 soniyalik tezlik oʻyini.',
+      p3t: 'Bepul va maxfiy.', p3b: 'Akkaunt ham, toʻlov ham kerak emas. Hammasi brauzeringizda qoladi.',
+      landingSample: '20 ta tayyor soʻz bilan boshlash', landingAdd: 'Oʻz roʻyxatimni qoʻshish',
+
+      tabLearn: 'Oʻrganish', tabReview: 'Takror', tabQuiz: 'Test', tabMatch: 'Juftlik',
+      dirNormal: 'Yoʻnalish: soʻz → tarjima', dirReverse: 'Yoʻnalish: tarjima → soʻz',
+      typingOn: 'Yozish: yoniq', typingOff: 'Yozish: oʻchiq',
+      voiceUS: 'Ovoz: amerikacha', voiceGB: 'Ovoz: britancha',
+      viewCards: 'Koʻrinish: kartochka', viewList: 'Koʻrinish: roʻyxat',
+
+      stStreak: 'kun ketma-ket', stToday: 'bugungi takrorlar', stWeek: 'shu hafta',
+      stTotal: 'jami', stMastered: 'oʻzlashtirilgan (5-quti)', stCards: 'jami kartochka',
+      exportBtn: 'Zaxira nusxa', importBtn: 'Yuklash',
+      backupDone: 'Zaxira nusxa yuklab olindi.',
+      backupBad: 'Faylni oʻqib boʻlmadi. Bu Vocab Box zaxira nusxasimi?',
+      imported: '{added} qoʻshildi', importedProgressed: ', {n} yangilandi',
+
+      themeBg: 'Fon — mavzu tanlang yoki oʻz rasmingizni yuklang.',
+      themeCard: 'Kartochka rangi — tayyorini tanlang, oʻzingiznikini kiriting yoki rasm qoʻying.',
+      uploadImage: 'Rasm yuklash', customColor: 'Oʻz rangim', resetAll: 'Hammasini tiklash',
+      imageTooBig: 'Rasm juda katta. Kichikrogʻini tanlang.',
+      thSlate:'Grafit', thNight:'Tun', thForest:'Oʻrmon', thPlum:'Olxoʻri',
+      thSand:'Qum', thOcean:'Okean', thWine:'Vino', thCoal:'Koʻmir',
+      cPaper:'Qogʻoz', cSnow:'Qor', cMint:'Yalpiz', cSky:'Osmon',
+      cRose:'Atirgul', cLilac:'Siren', cCharcoal:'Grafit', cInk:'Siyoh',
+
+      boxShort: '{n}-quti', drawerTitle: '{n}-qutidagi soʻzlarni koʻrsatish',
+      dueToday: 'bugunga {n}',
+
+      toggleAdd: '+ Soʻz qoʻshish / boshqarish',
+      addHelp: 'Roʻyxatni joylashtiring, har satrda bittadan: soʻz, tire, tarjima. Raqamlar shart emas.',
+      addExample: 'Masalan — reside — yashamoq',
+      bulkPh: 'reside — yashamoq\nremote — uzoq\nisolation — yakkalanish',
+      parseBtn: 'Qutiga qoʻshish',
+      yourWords: 'Sizning soʻzlaringiz ({n})', boxTitle: '{b}-quti ({n})', showAll: 'hammasini koʻrsatish',
+      filterPh: 'Filtr…',
+      noWordsYet: 'Hozircha soʻz yoʻq.', noWordsInBox: 'Bu qutida hozircha soʻz yoʻq.',
+      noFilterMatch: 'Filtrga mos keladigani yoʻq.',
+      deleteAllBtn: 'Barcha soʻzlarni oʻchirish',
+      confirmDeleteAll: '{n} oʻchirilsinmi? Bu barcha qutilarni tozalaydi.',
+      deletedWord: '«{w}» oʻchirildi', deletedAll: '{n} oʻchirildi', undo: 'Qaytarish',
+      parseNoMatch: 'Hech qaysi satr mos kelmadi. Format: soʻz — tarjima',
+      parseAdded: '{n} qoʻshildi', parseAlready: 'allaqachon bor edi: ',
+      parseUpdated: 'tarjima yangilandi: ', parseRepeated: 'roʻyxatda takrorlangan: ',
+      andMore: '{shown} va yana {n}',
+
+      emptyTitle: 'Quti boʻsh',
+      emptyBody: 'Quyida oʻz roʻyxatingizni qoʻshing yoki tayyorisidan boshlang.',
+      sampleBtn: 'Sinov toʻplami (20 ta soʻz)',
+      allDoneTitle: 'Bugunga tamom',
+      allDoneBody: 'Bugunga boshqa hech nima qolmadi. Ertaga qayting yoki davom eting — bu qutilarga taʼsir qilmaydi.',
+      practiceAnyway: 'Baribir mashq qilish',
+      tapToReveal: 'Ochish uchun bosing', orTapToReveal: 'Yoki kartochkani bosing',
+      typePh: 'Javobni yozing', check: 'Tekshirish',
+      correct: 'Toʻgʻri', notQuite: 'Unchalik emas',
+      again: 'Takrorlash', good: 'Bilaman', pronounce: 'Talaffuz qilish', practiceTab: 'Mashq',
+
+      newBadge: 'yangi', iKnowIt: 'Bilaman', knownTick: 'Bilaman ✓',
+      stillLearning: 'Hali oʻrganyapman', learnKnow: 'Bilaman ✓',
+      lsNew: 'yangi', lsSeen: 'boshlangan', lsMastered: 'oʻzlashtirilgan',
+      nothingToLearn: 'Hozircha oʻrganadigan narsa yoʻq',
+      nothingToLearnBody: 'Quyida soʻz qoʻshing yoki «Takror»dan sinov toʻplamini yuklang.',
+
+      chooseTranslation: 'Toʻgʻri tarjimani tanlang',
+      chooseWord: 'Toʻgʻri soʻzni tanlang',
+      nextQuestion: 'Keyingisi →',
+
+      matchTitle: '60 soniyalik oʻyin',
+      matchIntro: 'Soʻzlarni tarjimasi bilan imkon qadar tez juftlang. Bu faqat tezlik uchun — qutilarga taʼsir qilmaydi.',
+      start: 'Boshlash', playAgain: 'Yana oʻynash', matchedLabel: 'topildi',
+      pairsMatched: '{n} topildi',
+
+      modeQuiz: 'Test', modeMatch: 'Tezlik oʻyini',
+      needAtLeast: 'Kamida {n} kerak',
+      needBody: '{what} ishlashi uchun soʻz kamlik qilyapti. Hozir: {n}.',
+      addMoreBelow: ' Quyida yana qoʻshing.',
+      addMoreOrSample: ' Quyida yana qoʻshing yoki «Takror»dan sinov toʻplamini yuklang.'
+    }
+  }
+};
+
+let lang = 'en';
+let pluralRules = null;
+
+function detectLang(){
+  const nav = (navigator.language || 'en').toLowerCase();
+  if(nav.indexOf('ru') === 0) return 'ru';
+  if(nav.indexOf('uz') === 0) return 'uz';
+  return 'en';
+}
+
+function fill(str, vars){
+  if(!vars) return str;
+  return str.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
+}
+
+function t(key, vars){
+  const dict = I18N[lang] || I18N.en;
+  const s = (key in dict.t) ? dict.t[key] : I18N.en.t[key];
+  return fill(s === undefined ? key : s, vars);
+}
+
+/* Picks the CLDR plural form for n in the active locale. Languages with one
+   form only supply `other`, so the fallback chain returns it for every count. */
+function plural(key, n){
+  const dict = I18N[lang] || I18N.en;
+  const forms = dict.plurals[key] || {};
+  const cat = pluralRules.select(n);
+  return forms[cat] || forms.other || forms.many || forms.one || '';
+}
+
+/* "5 слов" / "5 ta so'z" / "5 words" — never build these by concatenation. */
+function count(key, n){
+  return n + ' ' + plural(key, n);
+}
+
+function setLang(code, save){
+  if(!I18N[code]) code = 'en';
+  lang = code;
+  pluralRules = new Intl.PluralRules(I18N[code].locale);
+  document.documentElement.lang = code === 'uz' ? 'uz-Latn' : code;
+  const sel = document.getElementById('langSelect');
+  if(sel) sel.value = code;
+  if(save){
+    settings.lang = code;
+    saveSettings();
+  }
+  applyStaticI18n();
+}
+
+/* Static markup carries its key in data-i18n (plus -title/-aria/-ph variants),
+   so the HTML stays readable and no node is missed on a language change. */
+function applyStaticI18n(){
+  document.title = t('docTitle');
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{
+    el.title = t(el.dataset.i18nTitle);
+  });
+  document.querySelectorAll('[data-i18n-aria]').forEach(el=>{
+    el.setAttribute('aria-label', t(el.dataset.i18nAria));
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{
+    el.placeholder = t(el.dataset.i18nPh);
+  });
+}
+
+/* Re-render everything language-dependent, keeping all session state:
+   renderCard dispatches to the active mode, so a Learn position, an
+   in-progress quiz and a running match all survive the switch. */
+function relocalize(){
+  renderSwatches();
+  renderCardSwatches();
+  renderChips();
+  renderStats();
+  renderStatsPanel();
+  renderWordList();
+  renderCard(false);
+}
+
+let settings = { direction:'normal', typing:false, voice:'en-US', learnView:'cards', lang:null };
 let activity = {};
 
 function loadAll(){
@@ -951,7 +1349,7 @@ function renderCardSwatches(){
     s.dataset.card = c.id;
     s.style.background = c.id;
     const labelColor = luminance(c.id) > 0.55 ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.85)';
-    s.innerHTML = '<span style="color:' + labelColor + ';text-shadow:none;bottom:50%;transform:translateY(50%);">' + c.label + '</span>';
+    s.innerHTML = '<span style="color:' + labelColor + ';text-shadow:none;bottom:50%;transform:translateY(50%);">' + t(c.key) + '</span>';
     s.addEventListener('click', ()=>{
       localStorage.setItem(CARD_KEY, c.id);
       localStorage.removeItem(CARD_IMAGE_KEY);
@@ -964,14 +1362,14 @@ function renderCardSwatches(){
 function renderSwatches(){
   const wrap = document.getElementById('swatches');
   wrap.innerHTML = '';
-  THEMES.forEach(t=>{
+  THEMES.forEach(th=>{
     const s = document.createElement('div');
     s.className = 'swatch';
-    s.dataset.theme = t.id;
-    s.style.background = t.bg;
-    s.innerHTML = '<span>' + t.label + '</span><div class="accent-strip" style="background:' + t.accent + '"></div>';
+    s.dataset.theme = th.id;
+    s.style.background = th.bg;
+    s.innerHTML = '<span>' + t(th.key) + '</span><div class="accent-strip" style="background:' + th.accent + '"></div>';
     s.addEventListener('click', ()=>{
-      localStorage.setItem(THEME_KEY, t.id);
+      localStorage.setItem(THEME_KEY, th.id);
       localStorage.removeItem(BG_IMAGE_KEY);
       applyTheme();
     });
@@ -995,7 +1393,7 @@ function handleImageUpload(file){
         localStorage.setItem(BG_IMAGE_KEY, dataUrl);
         applyTheme();
       }catch(err){
-        alert('That image is too large to save. Try a smaller one.');
+        alert(t('imageTooBig'));
       }
     };
     img.src = e.target.result;
@@ -1019,7 +1417,7 @@ function handleCardImageUpload(file){
         localStorage.setItem(CARD_IMAGE_KEY, dataUrl);
         applyCardColor();
       }catch(err){
-        alert('That image is too large to save. Try a smaller one.');
+        alert(t('imageTooBig'));
       }
     };
     img.src = e.target.result;
@@ -1071,7 +1469,7 @@ function exportBackup(){
   a.download = 'vocab-box-backup-' + todayKey(0) + '.json';
   a.click();
   URL.revokeObjectURL(a.href);
-  setBackupMsg('Backup downloaded.');
+  setBackupMsg(t('backupDone'));
 }
 
 function importBackup(file){
@@ -1115,9 +1513,9 @@ function importBackup(file){
       current = null;
       practiceMode = false;
       renderCard(false);
-      setBackupMsg(added + ' added' + (updated ? ', ' + updated + ' progressed' : '') + '.');
+      setBackupMsg(t('imported', {added: count('word', added)}) + (updated ? t('importedProgressed', {n: updated}) : '') + '.');
     }catch(err){
-      setBackupMsg('Could not read that file. Is it a Vocab Box backup?');
+      setBackupMsg(t('backupBad'));
     }
   };
   reader.readAsText(file);
@@ -1185,7 +1583,7 @@ function parseBulk(text){
 
 function summarizeList(words, limit){
   const shown = words.slice(0, limit).join(', ');
-  return words.length > limit ? shown + ' +' + (words.length - limit) + ' more' : shown;
+  return words.length > limit ? t('andMore', {shown: shown, n: words.length - limit}) : shown;
 }
 
 const SAMPLE_DECK = [
@@ -1245,13 +1643,13 @@ function deleteWord(id){
   renderStats();
   renderStatsPanel();
   renderWordList();
-  showUndo('Deleted "' + escapeHtml(card.word) + '"');
+  showUndo(t('deletedWord', {w: escapeHtml(card.word)}));
 }
 
 function deleteAllWords(){
   if(cards.length === 0) return;
   const n = cards.length;
-  if(!confirm('Delete all ' + n + ' words? This clears every box.')) return;
+  if(!confirm(t('confirmDeleteAll', {n: count('word', n)}))) return;
   lastDeleted = cards.slice();
   cards = [];
   queue = [];
@@ -1262,12 +1660,12 @@ function deleteAllWords(){
   renderStatsPanel();
   renderWordList();
   renderCard(false);
-  showUndo('Deleted all ' + n + ' words');
+  showUndo(t('deletedAll', {n: count('word', n)}));
 }
 
 function showUndo(message){
   const bar = document.getElementById('undoRow');
-  bar.innerHTML = message + ' — <button class="undo-btn" id="undoBtn">Undo</button>';
+  bar.innerHTML = message + ' — <button class="undo-btn" id="undoBtn">' + t('undo') + '</button>';
   bar.style.display = 'block';
   document.getElementById('undoBtn').addEventListener('click', undoDelete);
   clearTimeout(undoTimer);
@@ -1318,17 +1716,17 @@ function renderWordList(){
   const title = document.getElementById('wordListTitle');
   const pool = boxFilter ? cards.filter(c => c.box === boxFilter) : cards;
   const shown = rankWords(pool, filter);
-  const count = filter ? shown.length : pool.length;
+  const shownCount = filter ? shown.length : pool.length;
   if(boxFilter){
-    title.innerHTML = 'Box ' + boxFilter + ' (' + count + ') <button class="show-all" id="showAllBtn">show all</button>';
+    title.innerHTML = t('boxTitle', {b: boxFilter, n: shownCount}) + ' <button class="show-all" id="showAllBtn">' + t('showAll') + '</button>';
     const sa = document.getElementById('showAllBtn');
     if(sa) sa.addEventListener('click', ()=>{ boxFilter = null; renderWordList(); });
   } else {
-    title.innerHTML = 'Your words (' + count + ')';
+    title.innerHTML = t('yourWords', {n: shownCount});
   }
   wrap.innerHTML = '';
   if(shown.length === 0){
-    wrap.innerHTML = '<div class="word-list-empty">' + (pool.length === 0 ? (boxFilter ? 'No words in this box yet.' : 'No words yet.') : 'Nothing matches that filter.') + '</div>';
+    wrap.innerHTML = '<div class="word-list-empty">' + (pool.length === 0 ? (boxFilter ? t('noWordsInBox') : t('noWordsYet')) : t('noFilterMatch')) + '</div>';
     return;
   }
   shown.forEach(c=>{
@@ -1385,13 +1783,13 @@ function renderStats(){
   for(let i=1;i<=5;i++){
     const d = document.createElement('div');
     d.className = 'drawer';
-    d.title = 'Show words in box ' + i;
-    d.innerHTML = '<div class="n">'+counts[i]+'</div><div class="l">box '+i+'</div>';
+    d.title = t('drawerTitle', {n: i});
+    d.innerHTML = '<div class="n">'+counts[i]+'</div><div class="l">'+t('boxShort', {n: i})+'</div>';
     d.addEventListener('click', ()=>openBox(i));
     drawers.appendChild(d);
   }
-  document.getElementById('totalline').textContent = cards.length + (cards.length===1?' card':' cards');
-  document.getElementById('dueline').textContent = dueCards().length + ' due today';
+  document.getElementById('totalline').textContent = count('card', cards.length);
+  document.getElementById('dueline').textContent = t('dueToday', {n: dueCards().length});
 }
 
 function frontText(c){ return settings.direction === 'normal' ? c.word : c.translation; }
@@ -1437,9 +1835,9 @@ function buildLearnList(){
 
 function learnStatsHtml(){
   return '<div class="learn-stats">' +
-    '<div class="learn-stat"><div class="v" id="lsNew">' + cards.filter(x=>!x.seen).length + '</div><div class="k">new</div></div>' +
-    '<div class="learn-stat"><div class="v" id="lsSeen">' + cards.filter(x=>x.seen).length + '</div><div class="k">introduced</div></div>' +
-    '<div class="learn-stat"><div class="v" id="lsMastered">' + cards.filter(x=>x.box===5).length + '</div><div class="k">mastered</div></div>' +
+    '<div class="learn-stat"><div class="v" id="lsNew">' + cards.filter(x=>!x.seen).length + '</div><div class="k">' + t('lsNew') + '</div></div>' +
+    '<div class="learn-stat"><div class="v" id="lsSeen">' + cards.filter(x=>x.seen).length + '</div><div class="k">' + t('lsSeen') + '</div></div>' +
+    '<div class="learn-stat"><div class="v" id="lsMastered">' + cards.filter(x=>x.box===5).length + '</div><div class="k">' + t('lsMastered') + '</div></div>' +
   '</div>';
 }
 
@@ -1458,11 +1856,11 @@ function learnRow(c, i){
     '<span class="learn-row-n">' + (i+1) + '</span>' +
     '<div class="learn-row-main">' +
       '<div class="learn-row-word">' + escapeHtml(c.word) +
-        (c.seen ? '' : '<span class="learn-row-new">new</span>') +
+        (c.seen ? '' : '<span class="learn-row-new">' + t('newBadge') + '</span>') +
       '</div>' +
       '<div class="learn-row-trans">' + escapeHtml(c.translation) + '</div>' +
     '</div>' +
-    '<button class="learn-row-know">' + (c.seen ? 'Known \u2713' : 'I know it') + '</button>';
+    '<button class="learn-row-know">' + (c.seen ? t('knownTick') : t('iKnowIt')) + '</button>';
   const btn = row.querySelector('.learn-row-know');
   // Already-known words are inert: re-marking would knock a mastered word
   // back down to box 3.
@@ -1474,7 +1872,7 @@ function learnRow(c, i){
     const badge = row.querySelector('.learn-row-new');
     if(badge) badge.remove();
     row.classList.add('is-known');
-    btn.textContent = 'Known \u2713';
+    btn.textContent = t('knownTick');
     btn.disabled = true;
     refreshLearnStats();
   });
@@ -1498,7 +1896,7 @@ function renderLearn(){
   if(cards.length === 0){
     const n = document.createElement('div');
     n.className = 'stage-note';
-    n.innerHTML = '<div class="big">Nothing to learn yet</div>Add words below, or load the sample deck from Review.';
+    n.innerHTML = '<div class="big">' + t('nothingToLearn') + '</div>' + t('nothingToLearnBody');
     stage.appendChild(n);
     return;
   }
@@ -1512,16 +1910,16 @@ function renderLearn(){
   wrap.style.width = '100%';
   wrap.innerHTML =
     '<div class="learn-card">' +
-      (c.seen ? '' : '<span class="learn-new">new</span>') +
+      (c.seen ? '' : '<span class="learn-new">' + t('newBadge') + '</span>') +
       '<span class="learn-counter">' + (learnIdx+1) + ' / ' + learnList.length + '</span>' +
-      '<button class="speak-btn" id="learnSpeak" title="Pronounce" aria-label="Pronounce" style="top:34px;">' + SPEAKER_SVG + '</button>' +
+      '<button class="speak-btn" id="learnSpeak" title="' + t('pronounce') + '" aria-label="' + t('pronounce') + '" style="top:34px;">' + SPEAKER_SVG + '</button>' +
       '<div class="learn-word">' + escapeHtml(c.word) + '</div>' +
       '<div class="learn-trans">' + escapeHtml(c.translation) + '</div>' +
     '</div>' +
     '<div class="learn-nav">' +
       '<button class="btn-nav" id="learnPrev"' + (learnIdx===0?' disabled':'') + '>←</button>' +
-      '<button class="btn-practice-this" id="learnPractice">Still learning</button>' +
-      '<button class="btn-know" id="learnKnow">I know it ✓</button>' +
+      '<button class="btn-practice-this" id="learnPractice">' + t('stillLearning') + '</button>' +
+      '<button class="btn-know" id="learnKnow">' + t('learnKnow') + '</button>' +
       '<button class="btn-nav" id="learnNext"' + (learnIdx>=learnList.length-1?' disabled':'') + '>→</button>' +
     '</div>' +
     learnStatsHtml();
@@ -1563,9 +1961,9 @@ function shuffle(arr){
 function notEnough(stage, need, what){
   const n = document.createElement('div');
   n.className = 'stage-note';
-  n.innerHTML = '<div class="big">Need at least ' + need + ' words</div>' +
-    what + ' needs a few more words to work. You have ' + cards.length + '. Add more below' +
-    (cards.length === 0 ? ', or load the sample deck from Review.' : '.');
+  n.innerHTML = '<div class="big">' + t('needAtLeast', {n: count('word', need)}) + '</div>' +
+    t('needBody', {what: what, n: count('word', cards.length)}) +
+    (cards.length === 0 ? t('addMoreOrSample') : t('addMoreBelow'));
   stage.appendChild(n);
 }
 
@@ -1587,7 +1985,7 @@ function newQuizQuestion(){
 function renderQuiz(){
   const stage = document.getElementById('stage');
   stage.innerHTML = '';
-  if(cards.length < 4){ notEnough(stage, 4, 'Quiz'); return; }
+  if(cards.length < 4){ notEnough(stage, 4, t('modeQuiz')); return; }
   if(quiz && !cards.find(c => c.id === quiz.card.id)) quiz = null;
   if(!quiz) newQuizQuestion();
 
@@ -1597,7 +1995,7 @@ function renderQuiz(){
   wrap.style.flexDirection = 'column';
   wrap.style.alignItems = 'center';
 
-  const dirLabel = settings.direction === 'normal' ? 'Choose the correct translation' : 'Choose the correct word';
+  const dirLabel = settings.direction === 'normal' ? t('chooseTranslation') : t('chooseWord');
   wrap.innerHTML =
     '<span class="quiz-label">' + dirLabel + '</span>' +
     '<div class="quiz-prompt">' + escapeHtml(frontText(quiz.card)) + '</div>' +
@@ -1626,7 +2024,7 @@ function renderQuiz(){
   if(quiz.answered){
     const nb = document.createElement('button');
     nb.className = 'btn-next';
-    nb.textContent = 'Next question →';
+    nb.textContent = t('nextQuestion');
     nb.addEventListener('click', ()=>{ newQuizQuestion(); renderQuiz(); });
     wrap.querySelector('#quizNextSlot').appendChild(nb);
   }
@@ -1697,16 +2095,16 @@ function dealMatch(){
 function renderMatch(){
   const stage = document.getElementById('stage');
   stage.innerHTML = '';
-  if(cards.length < MATCH_PAIRS){ notEnough(stage, MATCH_PAIRS, 'Speed Match'); return; }
+  if(cards.length < MATCH_PAIRS){ notEnough(stage, MATCH_PAIRS, t('modeMatch')); return; }
 
   const wrap = document.createElement('div');
   wrap.style.width = '100%';
 
   if(!match){
     wrap.innerHTML =
-      '<div class="stage-note"><div class="big">60-second challenge</div>' +
-      'Match each word to its translation as fast as you can. This is just for speed — it does not change your boxes.' +
-      '<br><button class="btn-sample" id="matchStart">Start</button></div>';
+      '<div class="stage-note"><div class="big">' + t('matchTitle') + '</div>' +
+      t('matchIntro') +
+      '<br><button class="btn-sample" id="matchStart">' + t('start') + '</button></div>';
     stage.appendChild(wrap);
     wrap.querySelector('#matchStart').addEventListener('click', startMatch);
     return;
@@ -1716,8 +2114,8 @@ function renderMatch(){
     wrap.innerHTML =
       '<div class="match-center">' +
       '<div class="match-big">' + match.score + '</div>' +
-      '<div class="match-sub">' + (match.score === 1 ? '1 pair matched' : match.score + ' pairs matched') + '</div>' +
-      '<button class="btn-sample" id="matchAgain">Play again</button></div>';
+      '<div class="match-sub">' + t('pairsMatched', {n: count('pair', match.score)}) + '</div>' +
+      '<button class="btn-sample" id="matchAgain">' + t('playAgain') + '</button></div>';
     stage.appendChild(wrap);
     wrap.querySelector('#matchAgain').addEventListener('click', startMatch);
     return;
@@ -1726,7 +2124,7 @@ function renderMatch(){
   wrap.innerHTML =
     '<div class="match-head">' +
       '<div class="match-timer' + (match.timeLeft<=10?' low':'') + '" id="matchTimer">' + match.timeLeft + '</div>' +
-      '<div class="match-score"><b>' + match.score + '</b>matched</div>' +
+      '<div class="match-score"><b>' + match.score + '</b>' + t('matchedLabel') + '</div>' +
     '</div><div class="match-grid" id="matchGrid"></div>';
   stage.appendChild(wrap);
 
@@ -1796,9 +2194,9 @@ function renderCard(animateIn){
       empty.className = 'empty';
       const total = cards.length;
       if(total === 0){
-        empty.innerHTML = '<div class="big">Your box is empty</div>Add your own word list below, or start with a ready-made one.<br><button class="btn-sample" id="sampleBtn">Try a sample deck (20 words)</button>';
+        empty.innerHTML = '<div class="big">' + t('emptyTitle') + '</div>' + t('emptyBody') + '<br><button class="btn-sample" id="sampleBtn">' + t('sampleBtn') + '</button>';
       } else {
-        empty.innerHTML = '<div class="big">All done for now</div>Nothing left due today. Come back tomorrow, or keep going without affecting your boxes.<br><button class="btn-practice" id="practiceBtn">Practice anyway</button>';
+        empty.innerHTML = '<div class="big">' + t('allDoneTitle') + '</div>' + t('allDoneBody') + '<br><button class="btn-practice" id="practiceBtn">' + t('practiceAnyway') + '</button>';
       }
       stage.appendChild(empty);
       const pb = document.getElementById('practiceBtn');
@@ -1817,8 +2215,8 @@ function renderCard(animateIn){
   card.className = 'card' + (animateIn ? ' entering' : '');
   const showSpeaker = settings.direction === 'normal' || flipped;
   card.innerHTML =
-    '<div class="tab' + (practiceMode ? ' practice' : '') + '">' + (practiceMode ? 'PRACTICE' : 'BOX ' + current.box) + '</div>' +
-    (showSpeaker ? '<button class="speak-btn" id="speakBtn" title="Pronounce" aria-label="Pronounce">' + SPEAKER_SVG + '</button>' : '') +
+    '<div class="tab' + (practiceMode ? ' practice' : '') + '">' + (practiceMode ? t('practiceTab') : t('boxShort', {n: current.box})) + '</div>' +
+    (showSpeaker ? '<button class="speak-btn" id="speakBtn" title="' + t('pronounce') + '" aria-label="' + t('pronounce') + '">' + SPEAKER_SVG + '</button>' : '') +
     '<div class="holes"><div class="hole"></div><div class="hole"></div></div>' +
     '<div class="card-body" id="cardBody"></div>';
   stage.appendChild(card);
@@ -1867,10 +2265,10 @@ function renderCardBody(body){
   if(!flipped){
     let html = '<div class="word">' + escapeHtml(frontText(current)) + '</div>';
     if(settings.typing){
-      html += '<div class="type-row"><input class="type-input" id="typeInput" type="text" placeholder="Type the answer" autocomplete="off" autocapitalize="off"><button class="btn-check" id="checkBtn">Check</button></div>';
-      html += '<div class="hint">Or tap the card to reveal</div>';
+      html += '<div class="type-row"><input class="type-input" id="typeInput" type="text" placeholder="' + t('typePh') + '" autocomplete="off" autocapitalize="off"><button class="btn-check" id="checkBtn">' + t('check') + '</button></div>';
+      html += '<div class="hint">' + t('orTapToReveal') + '</div>';
     } else {
-      html += '<div class="hint">Tap to reveal</div>';
+      html += '<div class="hint">' + t('tapToReveal') + '</div>';
     }
     body.innerHTML = html;
   } else {
@@ -1879,7 +2277,7 @@ function renderCardBody(body){
       '<div class="divider"></div>' +
       '<div class="translation">' + escapeHtml(backText(current)) + '</div>';
     if(answered && lastAnswerCorrect !== null){
-      html += '<div class="feedback ' + (lastAnswerCorrect ? 'right">Correct' : 'wrong">Not quite') + '</div>';
+      html += '<div class="feedback ' + (lastAnswerCorrect ? 'right">' + t('correct') : 'wrong">' + t('notQuite')) + '</div>';
     }
     body.innerHTML = html;
   }
@@ -1891,8 +2289,8 @@ function showRateButtons(){
   const row = document.createElement('div');
   row.className = 'rate-row';
   row.innerHTML =
-    '<button class="btn-again" id="btnAgain">Again</button>' +
-    '<button class="btn-good" id="btnGood">Good</button>';
+    '<button class="btn-again" id="btnAgain">' + t('again') + '</button>' +
+    '<button class="btn-good" id="btnGood">' + t('good') + '</button>';
   stage.appendChild(row);
   document.getElementById('btnAgain').addEventListener('click', ()=>rate(false));
   document.getElementById('btnGood').addEventListener('click', ()=>rate(true));
@@ -1936,16 +2334,16 @@ function escapeHtml(str){
 
 function renderChips(){
   const dir = document.getElementById('dirChip');
-  dir.textContent = settings.direction === 'normal' ? 'Direction: word → translation' : 'Direction: translation → word';
+  dir.textContent = settings.direction === 'normal' ? t('dirNormal') : t('dirReverse');
   dir.classList.toggle('on', settings.direction === 'reverse');
   const typ = document.getElementById('typeChip');
-  typ.textContent = 'Typing: ' + (settings.typing ? 'on' : 'off');
+  typ.textContent = settings.typing ? t('typingOn') : t('typingOff');
   typ.classList.toggle('on', settings.typing);
   const vc = document.getElementById('voiceChip');
-  vc.textContent = 'Voice: ' + (settings.voice === 'en-GB' ? 'British' : 'American');
+  vc.textContent = settings.voice === 'en-GB' ? t('voiceGB') : t('voiceUS');
   vc.classList.toggle('on', settings.voice === 'en-GB');
   const vw = document.getElementById('viewChip');
-  vw.textContent = 'View: ' + (settings.learnView === 'list' ? 'List' : 'Cards');
+  vw.textContent = settings.learnView === 'list' ? t('viewList') : t('viewCards');
   vw.classList.toggle('on', settings.learnView === 'list');
   vw.style.display = mode === 'learn' ? '' : 'none';
 }
@@ -2056,12 +2454,12 @@ document.getElementById('parseBtn').addEventListener('click', ()=>{
   saveCards();
   const msg = document.getElementById('parseMsg');
   const parts = [];
-  if(r.added) parts.push(r.added + ' added');
-  if(r.dupSame.length) parts.push('already had: ' + summarizeList(r.dupSame, 3));
-  if(r.dupChanged.length) parts.push('translation updated: ' + summarizeList(r.dupChanged, 3));
-  if(r.dupInList.length) parts.push('repeated in your list: ' + summarizeList(r.dupInList, 3));
+  if(r.added) parts.push(t('parseAdded', {n: count('word', r.added)}));
+  if(r.dupSame.length) parts.push(t('parseAlready') + summarizeList(r.dupSame, 3));
+  if(r.dupChanged.length) parts.push(t('parseUpdated') + summarizeList(r.dupChanged, 3));
+  if(r.dupInList.length) parts.push(t('parseRepeated') + summarizeList(r.dupInList, 3));
   if(parts.length === 0){
-    msg.textContent = 'No lines matched. Use: word — translation';
+    msg.textContent = t('parseNoMatch');
   } else {
     msg.textContent = parts.join(' · ');
     document.getElementById('bulkInput').value = '';
@@ -2087,6 +2485,19 @@ function hideLanding(){
   document.body.classList.remove('landing-on');
 }
 
+const langSelect = document.getElementById('langSelect');
+Object.keys(I18N).forEach(code=>{
+  const o = document.createElement('option');
+  o.value = code;
+  o.textContent = I18N[code].short;
+  langSelect.appendChild(o);
+});
+langSelect.value = lang;
+langSelect.addEventListener('change', ()=>{
+  setLang(langSelect.value, true);
+  relocalize();
+});
+
 document.getElementById('aboutLink').addEventListener('click', showLanding);
 
 document.getElementById('landingSample').addEventListener('click', ()=>{
@@ -2105,6 +2516,8 @@ document.getElementById('landingAdd').addEventListener('click', ()=>{
 
 function init(){
   loadAll();
+  // A saved choice always wins; otherwise fall back to the browser's language.
+  setLang(settings.lang && I18N[settings.lang] ? settings.lang : detectLang(), false);
   renderSwatches();
   renderCardSwatches();
   applyTheme();

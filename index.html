@@ -823,14 +823,15 @@ let practiceMode = false;
 let answered = false;
 let lastAnswerCorrect = null;
 /* ---------- Languages ----------
-   To add a language, add one object here: `name` for the switcher, `locale`
-   for Intl.PluralRules, `t` for strings and `plurals` for counted nouns.
+   To add a language, add one object here: `name` and `short` for the
+   switcher, `locale` for Intl.PluralRules, `sampleDeck` naming an entry in
+   SAMPLE_DECKS, `t` for strings and `plurals` for counted nouns.
    Plural forms are keyed by CLDR category; a language with a single form
    only needs `other`, and plural() falls back to it. */
 const I18N = {
   en: {
     name: 'English', short: 'EN',
-    locale: 'en',
+    locale: 'en', sampleDeck: 'ru',
     plurals: {
       word: { one: 'word', other: 'words' },
       card: { one: 'card', other: 'cards' },
@@ -926,7 +927,7 @@ const I18N = {
 
   ru: {
     name: 'Русский', short: 'RU',
-    locale: 'ru',
+    locale: 'ru', sampleDeck: 'ru',
     plurals: {
       word: { one: 'слово', few: 'слова', many: 'слов' },
       card: { one: 'карточка', few: 'карточки', many: 'карточек' },
@@ -1022,7 +1023,7 @@ const I18N = {
 
   uz: {
     name: 'Oʻzbekcha', short: 'UZ',
-    locale: 'uz',
+    locale: 'uz', sampleDeck: 'uz',
     /* Uzbek does not change the noun for number, so one form covers every
        count; plural() falls back to `other` for any CLDR category. */
     plurals: {
@@ -1586,18 +1587,32 @@ function summarizeList(words, limit){
   return words.length > limit ? t('andMore', {shown: shown, n: words.length - limit}) : shown;
 }
 
-const SAMPLE_DECK = [
-  ['abundant','обильный'],['deteriorate','ухудшаться'],['feasible','осуществимый'],
-  ['inevitably','неизбежно'],['scrutinize','тщательно изучать'],['ambiguous','двусмысленный'],
-  ['diligent','усердный'],['profound','глубокий'],['reluctant','неохотный'],
-  ['thrive','процветать'],['viable','жизнеспособный'],['coherent','связный'],
-  ['deliberately','намеренно'],['fluctuate','колебаться'],['substantial','существенный'],
-  ['compelling','убедительный'],['hinder','препятствовать'],['notion','понятие'],
-  ['resilient','устойчивый'],['versatile','универсальный']
-];
+// Seed decks keyed by translation language. Each I18N entry names the deck
+// it loads, so the English interface keeps using the Russian one.
+const SAMPLE_DECKS = {
+  ru: [
+    ['abundant','обильный'],['deteriorate','ухудшаться'],['feasible','осуществимый'],
+    ['inevitably','неизбежно'],['scrutinize','тщательно изучать'],['ambiguous','двусмысленный'],
+    ['diligent','усердный'],['profound','глубокий'],['reluctant','неохотный'],
+    ['thrive','процветать'],['viable','жизнеспособный'],['coherent','связный'],
+    ['deliberately','намеренно'],['fluctuate','колебаться'],['substantial','существенный'],
+    ['compelling','убедительный'],['hinder','препятствовать'],['notion','понятие'],
+    ['resilient','устойчивый'],['versatile','универсальный']
+  ],
+  uz: [
+    ['abundant','moʻl'],['deteriorate','yomonlashmoq'],['feasible','amalga oshirsa boʻladigan'],
+    ['inevitably','muqarrar ravishda'],['scrutinize','sinchiklab oʻrganmoq'],['ambiguous','ikki maʼnoli'],
+    ['diligent','tirishqoq'],['profound','chuqur'],['reluctant','istamaydigan'],
+    ['thrive','gullab-yashnamoq'],['viable','yashovchan'],['coherent','izchil'],
+    ['deliberately','ataylab'],['fluctuate','oʻzgarib turmoq'],['substantial','salmoqli'],
+    ['compelling','ishonarli'],['hinder','toʻsqinlik qilmoq'],['notion','tushuncha'],
+    ['resilient','chidamli'],['versatile','koʻp qirrali']
+  ]
+};
 
 function loadSampleDeck(){
-  SAMPLE_DECK.forEach(([word, translation])=>{
+  const deck = SAMPLE_DECKS[(I18N[lang] || I18N.en).sampleDeck] || SAMPLE_DECKS.ru;
+  deck.forEach(([word, translation])=>{
     if(cards.find(c => c.word.toLowerCase() === word.toLowerCase())) return;
     cards.push({
       id: Date.now() + '-' + Math.random().toString(36).slice(2,8),

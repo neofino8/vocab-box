@@ -651,17 +651,32 @@
   /* Language switcher: one pill of code segments, sized to sit with the icon
      buttons. Colours come from the theme variables, accent included. */
   .lang-pill{
+    position:relative; isolation:isolate;
     display:flex; align-items:stretch; flex-shrink:0;
     height:38px; padding:2px; gap:0;
     background:var(--panel); border:1px solid var(--line); border-radius:20px;
   }
+  /* The active fill is one indicator behind the codes. JS sizes and places it
+     from the active segment; it never intercepts a tap. */
+  .lang-ind{
+    position:absolute; top:0; left:0; z-index:0;
+    background:var(--accent); border-radius:16px;
+    pointer-events:none; will-change:transform;
+  }
   .lang-seg{
+    position:relative; z-index:1;
     background:transparent; color:var(--soft);
     font-family:'IBM Plex Mono', monospace; font-size:11.5px; font-weight:500;
     letter-spacing:.7px; padding:0 7px; border-radius:16px;
   }
   .lang-seg:not(.on):hover{ color:var(--paper); }
-  .lang-seg.on{ background:var(--accent); color:var(--ink); }
+  .lang-seg.on{ color:var(--ink); }
+  @media (prefers-reduced-motion: no-preference){
+    .lang-ind[data-ready]{
+      transition:transform .25s cubic-bezier(.4,0,.2,1), width .25s cubic-bezier(.4,0,.2,1);
+    }
+    .lang-seg{ transition:color .25s cubic-bezier(.4,0,.2,1); }
+  }
   /* A phone-width row cannot hold the title, the language pill, both icon
      buttons and a readable About label, so About drops to its own line. */
   .title-row{ gap:8px; }
@@ -2531,29 +2546,65 @@ function langLabel(code){
   return (I18N[lang] || I18N.en).t[key] || I18N.en.t[key] || I18N[code].name;
 }
 
+// Built once, then only re-synced, so the indicator can slide between
+// segments and their text colours can fade rather than being replaced.
+let langIndicator = null;
+
 function renderLangOptions(){
   const wrap = document.getElementById('langOptions');
-  wrap.innerHTML = '';
-  Object.keys(I18N).forEach(code=>{
-    const b = document.createElement('button');
-    const label = langLabel(code);
-    b.className = 'lang-seg' + (code === lang ? ' on' : '');
-    b.textContent = code.toUpperCase();
-    b.title = label;
-    b.setAttribute('aria-label', label);
-    b.setAttribute('aria-pressed', code === lang ? 'true' : 'false');
-    b.addEventListener('click', ()=>{
-      const hadFocus = document.activeElement === b;
-      setLang(code, true);
-      relocalize();
-      // The segments were rebuilt; keep keyboard focus on the chosen language.
-      if(hadFocus){
-        const active = document.querySelector('#langOptions .lang-seg.on');
-        if(active) active.focus();
-      }
+  if(!langIndicator){
+    langIndicator = document.createElement('span');
+    langIndicator.className = 'lang-ind';
+    langIndicator.setAttribute('aria-hidden', 'true');
+    wrap.appendChild(langIndicator);
+    Object.keys(I18N).forEach(code=>{
+      const b = document.createElement('button');
+      b.className = 'lang-seg';
+      b.dataset.lang = code;
+      b.textContent = code.toUpperCase();
+      b.addEventListener('click', ()=>{
+        setLang(code, true);
+        relocalize();
+      });
+      wrap.appendChild(b);
     });
-    wrap.appendChild(b);
+    // Re-place without motion whenever the pill resizes: first layout, web
+    // fonts arriving, or the header returning after the landing screen.
+    if('ResizeObserver' in window){
+      new ResizeObserver(()=>placeLangIndicator(false)).observe(wrap);
+    }
+  }
+  wrap.querySelectorAll('.lang-seg').forEach(b=>{
+    const code = b.dataset.lang, label = langLabel(code), active = code === lang;
+    b.classList.toggle('on', active);
+    b.setAttribute('aria-pressed', active ? 'true' : 'false');
+    b.setAttribute('aria-label', label);
+    b.title = label;
   });
+  placeLangIndicator(true);
+}
+
+// Size and position come from the active segment itself, not fixed offsets.
+function placeLangIndicator(animate){
+  const ind = langIndicator;
+  if(!ind) return;
+  const wrap = ind.parentElement, seg = wrap.querySelector('.lang-seg.on');
+  const box = wrap.getBoundingClientRect();
+  if(!seg || !box.width) return;  // header hidden; the observer places it once shown
+  const r = seg.getBoundingClientRect(), c = getComputedStyle(wrap);
+  // The first placement, and any re-placement after a resize, is instant.
+  // Motion switches on once that position is committed, so the indicator
+  // never slides in from the corner and never waits on the observer.
+  const instant = !animate || !ind.hasAttribute('data-ready');
+  if(instant) ind.removeAttribute('data-ready');
+  ind.style.width = r.width + 'px';
+  ind.style.height = r.height + 'px';
+  ind.style.top = (r.top - box.top - parseFloat(c.borderTopWidth)) + 'px';
+  ind.style.transform = 'translateX(' + (r.left - box.left - parseFloat(c.borderLeftWidth)) + 'px)';
+  if(instant){
+    void ind.offsetWidth;
+    ind.setAttribute('data-ready', '');
+  }
 }
 
 document.getElementById('aboutLink').addEventListener('click', showLanding);

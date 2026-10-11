@@ -727,7 +727,17 @@
   }
   .sync-input::placeholder{ color:var(--soft); }
   .sync-msg{ font-size:12px; color:var(--accent); line-height:1.5; margin-top:8px; min-height:16px; }
-  .sync-box button:disabled{ opacity:.5; cursor:default; }
+  .sync-box button:disabled, .landing-join button:disabled{ opacity:.5; cursor:default; }
+  /* Landing: a quieter third option, for people who already have a deck. */
+  .landing-join{ margin-top:16px; text-align:center; }
+  .landing-join-link{
+    background:none; border:none; padding:10px 4px; min-height:40px;
+    color:var(--soft); font-size:13px; line-height:1.45;
+    text-decoration:underline; text-underline-offset:3px;
+  }
+  .landing-join-link:hover{ color:var(--paper); }
+  .landing-join-form{ text-align:left; background:var(--panel); border-radius:8px; padding:14px 16px; }
+  .landing-join-help{ font-size:12.5px; color:var(--soft); line-height:1.5; margin:0 0 10px; }
   @media (prefers-reduced-motion: no-preference){
     .sync-status.st-syncing .sync-dot{ animation:syncPulse .9s ease-in-out infinite alternate; }
     @keyframes syncPulse{ from{ opacity:.3; } to{ opacity:1; } }
@@ -763,6 +773,17 @@
     <div class="landing-actions anim-4">
       <button class="btn-landing" id="landingSample" data-i18n="landingSample">Start with 20 sample words</button>
       <button class="btn-landing-alt" id="landingAdd" data-i18n="landingAdd">Add my own list</button>
+    </div>
+    <div class="landing-join anim-4" id="landingJoin">
+      <button class="landing-join-link" id="landingJoinBtn" data-i18n="landingJoin">Already use Vocab Box on another device? Enter your sync code</button>
+      <div class="landing-join-form" id="landingJoinForm" hidden>
+        <p class="landing-join-help" data-i18n="syncEnterHelp">Enter the code from your other device. The words here are kept and combined with the synced ones.</p>
+        <div class="sync-enter">
+          <input class="sync-input" id="landingCodeInput" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="13" placeholder="XXXXX-XXXXX" data-i18n-aria="syncCodeLabel">
+          <button class="btn-parse" id="landingConnectBtn" data-i18n="syncConnect">Connect</button>
+        </div>
+        <div class="sync-msg" id="landingJoinMsg" role="status" aria-live="polite"></div>
+      </div>
     </div>
   </section>
 
@@ -926,6 +947,7 @@ const I18N = {
       p2t: 'Four ways to study.', p2b: 'Learn, review, quiz, and a 60-second match challenge.',
       p3t: 'Private and free.', p3b: 'No account, no cost. Your words stay on your device unless you turn on sync.',
       landingSample: 'Start with 20 sample words', landingAdd: 'Add my own list',
+      landingJoin: 'Already use Vocab Box on another device? Enter your sync code',
 
       tabLearn: 'Learn', tabReview: 'Review', tabQuiz: 'Quiz', tabMatch: 'Match',
       dirNormal: 'Direction: word → translation', dirReverse: 'Direction: translation → word',
@@ -1044,6 +1066,7 @@ const I18N = {
       p2t: 'Четыре режима.', p2b: 'Учить, повторять, тест и игра на скорость за 60 секунд.',
       p3t: 'Бесплатно и приватно.', p3b: 'Без аккаунта и без оплаты. Слова хранятся на вашем устройстве, пока вы не включите синхронизацию.',
       landingSample: 'Начать с 20 готовых слов', landingAdd: 'Добавить свой список',
+      landingJoin: 'Уже пользуетесь Vocab Box на другом устройстве? Введите код синхронизации',
 
       tabLearn: 'Учить', tabReview: 'Повтор', tabQuiz: 'Тест', tabMatch: 'Пары',
       dirNormal: 'Направление: слово → перевод', dirReverse: 'Направление: перевод → слово',
@@ -1164,6 +1187,7 @@ const I18N = {
       p2t: 'Toʻrt xil mashq.', p2b: 'Oʻrganish, takrorlash, test va 60 soniyalik tezlik oʻyini.',
       p3t: 'Bepul va maxfiy.', p3b: 'Akkaunt ham, toʻlov ham kerak emas. Sinxronlashni yoqmaguningizcha soʻzlaringiz qurilmangizda qoladi.',
       landingSample: '20 ta tayyor soʻz bilan boshlash', landingAdd: 'Oʻz roʻyxatimni qoʻshish',
+      landingJoin: 'Boshqa qurilmada Vocab Box ishlatyapsizmi? Sinxronlash kodini kiriting',
 
       tabLearn: 'Oʻrganish', tabReview: 'Takror', tabQuiz: 'Test', tabMatch: 'Juftlik',
       dirNormal: 'Yoʻnalish: soʻz → tarjima', dirReverse: 'Yoʻnalish: tarjima → soʻz',
@@ -2773,6 +2797,7 @@ function showLanding(){
   document.getElementById('addPanel').classList.remove('open');
   document.getElementById('themePanel').classList.remove('open');
   document.getElementById('statsPanel').classList.remove('open');
+  resetLandingJoin();
   document.body.classList.add('landing-on');
   window.scrollTo(0, 0);
 }
@@ -2885,7 +2910,7 @@ let retryTimer = null;
 let retryDelay = 0;
 let syncUi = 'idle';         // idle | enter (typing a code)
 let syncBusy = false;
-let syncMsg = '';
+let syncMsg = '';         // an i18n key, so an open message follows a language switch
 let syncCodeDraft = '';
 
 function randomCrockford(n){
@@ -3194,35 +3219,43 @@ async function turnOnSync(){
     }
     throw new Error('no free code');
   } catch(err){
-    syncMsg = isTransient(err) ? t('syncUnreachable') : t('syncRejected');
+    syncMsg = isTransient(err) ? 'syncUnreachable' : 'syncRejected';
   } finally {
     syncBusy = false;
     renderSyncPanel();
   }
 }
 
+// Joins an existing synced deck and resolves to true once this device has
+// joined. The fetched deck is merged in before anything is pushed, so the
+// joined deck is on screen even if the push that follows fails.
 async function connectWithCode(input){
-  if(syncBusy || sync.code) return;
+  if(syncBusy || sync.code) return false;
   const code = normalizeCode(input);
-  if(!code){ syncMsg = t('syncBadCode'); renderSyncPanel(); return; }
+  if(!code){ syncMsg = 'syncBadCode'; renderSyncPanel(); return false; }
   syncBusy = true; syncMsg = ''; renderSyncPanel();
+  let remote = null;
   try{
-    const res = await rpc('get_deck', {code});
+    remote = await rpc('get_deck', {code});
+    if(!remote || typeof remote.version !== 'number') syncMsg = 'syncUnreachable';
     // A mistyped code looks just like an unused one, so this only ever joins
     // a deck that exists; it never starts one.
-    if(!res || res.status !== 'ok'){ syncMsg = t('syncNotFound'); return; }
-    sync = {code, version: 0, lastSynced: 0, dirty: true};
-    saveSyncState();
-    syncUi = 'idle';
-    syncCodeDraft = '';
+    else if(remote.status !== 'ok') syncMsg = 'syncNotFound';
   } catch(err){
-    syncMsg = isTransient(err) ? t('syncUnreachable') : t('syncRejected');
-    return;
-  } finally {
-    syncBusy = false;
-    renderSyncPanel();
+    syncMsg = isTransient(err) ? 'syncUnreachable' : 'syncRejected';
   }
-  syncNow();
+  syncBusy = false;
+  if(syncMsg){ renderSyncPanel(); return false; }
+  const now = Date.now();
+  applyDeck(mergeDecks(localDeck(now), mergeDecks(readDeck(remote.deck), emptyDeck(), now), now));
+  sync = {code, version: remote.version, lastSynced: Date.now(), dirty: true};
+  saveSyncState();
+  syncUi = 'idle';
+  syncCodeDraft = '';
+  setSyncStatus('synced');
+  renderSyncPanel();
+  await syncNow();   // pushes this device's own words and picks up anything newer
+  return true;
 }
 
 function stopSync(){
@@ -3301,7 +3334,7 @@ function renderSyncPanel(){
       '</div>';
   }
   html += '<div class="sync-msg" id="syncMsg" role="status" aria-live="polite">' +
-    escapeHtml(syncBusy ? t('syncStatusSyncing') : syncMsg) + '</div>';
+    escapeHtml(syncBusy ? t('syncStatusSyncing') : (syncMsg ? t(syncMsg) : '')) + '</div>';
   box.innerHTML = html;
 
   const on = (id, fn) => { const el = document.getElementById(id); if(el) el.addEventListener('click', fn); };
@@ -3332,6 +3365,39 @@ function renderSyncPanel(){
     input.addEventListener('keydown', e=>{ if(e.key === 'Enter') connectWithCode(syncCodeDraft); });
   }
   updateSyncStatusLine();
+  setLandingMsg(document.getElementById('landingJoinMsg').dataset.key || '');
+}
+
+function setLandingMsg(key){
+  const el = document.getElementById('landingJoinMsg');
+  el.dataset.key = key;
+  el.textContent = key ? t(key) : '';
+}
+
+// The landing's join option is offered only while sync is off, starting
+// folded away behind its link each time the landing opens.
+function resetLandingJoin(){
+  document.getElementById('landingJoin').hidden = !!sync.code;
+  document.getElementById('landingJoinBtn').hidden = false;
+  document.getElementById('landingJoinForm').hidden = true;
+  setLandingMsg('');
+}
+
+// Joining from the landing skips the sample deck and opens the merged deck.
+async function landingConnect(){
+  const btn = document.getElementById('landingConnectBtn');
+  if(btn.disabled) return;
+  btn.disabled = true;
+  setLandingMsg('syncStatusSyncing');
+  const joined = await connectWithCode(document.getElementById('landingCodeInput').value);
+  btn.disabled = false;
+  if(joined){
+    setLandingMsg('');
+    hideLanding();
+    setMode('review');
+  } else {
+    setLandingMsg(syncMsg);
+  }
 }
 
 function startSync(){
@@ -3343,6 +3409,13 @@ function startSync(){
     else if(sync.code && Date.now() - sync.lastSynced > 30000) syncNow();
   });
   window.addEventListener('online', ()=>{ if(sync.code) syncNow(); });
+  document.getElementById('landingJoinBtn').addEventListener('click', ()=>{
+    document.getElementById('landingJoinBtn').hidden = true;
+    document.getElementById('landingJoinForm').hidden = false;
+    document.getElementById('landingCodeInput').focus();
+  });
+  document.getElementById('landingConnectBtn').addEventListener('click', landingConnect);
+  document.getElementById('landingCodeInput').addEventListener('keydown', e=>{ if(e.key === 'Enter') landingConnect(); });
   // Keeps "2 minutes ago" current while the stats panel is open.
   setInterval(updateSyncStatusLine, 30000);
   if(sync.code) syncNow();

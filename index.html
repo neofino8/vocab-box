@@ -728,6 +728,40 @@
   .sync-input::placeholder{ color:var(--soft); }
   .sync-msg{ font-size:12px; color:var(--accent); line-height:1.5; margin-top:8px; min-height:16px; }
   .sync-box button:disabled, .landing-join button:disabled{ opacity:.5; cursor:default; }
+  .share-toggle{ display:flex; gap:10px; align-items:flex-start; font-size:13.5px; line-height:1.4; cursor:pointer; }
+  .share-toggle input, .join-opt input{
+    width:18px; height:18px; margin:1px 0 0; flex-shrink:0; accent-color:var(--accent);
+  }
+  .share-note{ font-size:12px; color:var(--soft); line-height:1.5; margin:6px 0 12px 28px; }
+  /* Join choices, shown over everything before a device joins a synced deck. */
+  .join-dialog{
+    position:fixed; inset:0; z-index:50;
+    display:flex; align-items:center; justify-content:center;
+    padding:calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px))
+            calc(16px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
+    background:rgba(8,10,12,0.66);
+  }
+  .join-dialog[hidden]{ display:none; }
+  .join-card{
+    width:100%; max-width:440px; max-height:100%; overflow-y:auto;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:20px 18px 18px; color:var(--paper); box-shadow:0 18px 50px rgba(0,0,0,0.45);
+  }
+  .join-title{ font-family:'Source Serif 4', serif; font-weight:600; font-size:21px; margin:0; }
+  .join-sub{ font-size:12.5px; color:var(--soft); line-height:1.5; margin:6px 0 16px; }
+  .join-group{ border:none; margin:0 0 6px; padding:0; min-width:0; }
+  .join-group legend{
+    font-size:10.5px; color:var(--soft); text-transform:uppercase; letter-spacing:.5px;
+    padding:0; margin-bottom:8px;
+  }
+  .join-opt{
+    display:flex; gap:10px; align-items:flex-start; cursor:pointer;
+    padding:10px 12px; margin-bottom:8px; border:1px solid var(--line); border-radius:8px;
+  }
+  .join-opt:has(input:checked){ border-color:var(--accent); }
+  .join-opt b{ display:block; font-size:14px; font-weight:600; }
+  .join-opt small{ display:block; font-size:12px; color:var(--soft); line-height:1.45; margin-top:2px; }
+  .join-actions{ display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
   /* Landing: a quieter third option, for people who already have a deck. */
   .landing-join{ margin-top:16px; text-align:center; }
   .landing-join-link{
@@ -866,6 +900,30 @@ isolation — изоляция"></textarea>
   </div>
 </div>
 
+<div class="join-dialog" id="joinDialog" hidden>
+  <div class="join-card" role="dialog" aria-modal="true" aria-labelledby="joinTitle">
+    <h2 class="join-title" id="joinTitle" data-i18n="joinTitle">Join your synced deck</h2>
+    <p class="join-sub" id="joinSub"></p>
+    <fieldset class="join-group" id="joinWords">
+      <legend data-i18n="joinWordsLegend">Words</legend>
+      <label class="join-opt"><input type="radio" name="joinWords" value="combine" checked>
+        <span><b data-i18n="joinCombine">Combine</b><small data-i18n="joinCombineHint">Keep the words on this device and add the synced ones.</small></span></label>
+      <label class="join-opt"><input type="radio" name="joinWords" value="replace">
+        <span><b data-i18n="joinReplace">Replace</b><small id="joinReplaceHint"></small></span></label>
+    </fieldset>
+    <fieldset class="join-group">
+      <legend data-i18n="joinSettingsLegend">Appearance &amp; settings</legend>
+      <label class="share-toggle"><input type="checkbox" id="joinShare" checked>
+        <span data-i18n="shareSettings">Use the same theme and settings on all devices</span></label>
+      <p class="share-note" data-i18n="shareSettingsNote">Theme, card color, language, voice, direction and typing. Background images and card photos stay on each device.</p>
+    </fieldset>
+    <div class="join-actions">
+      <button class="btn-parse" id="joinGo" data-i18n="syncConnect">Connect</button>
+      <button class="btn-muted" id="joinCancel" data-i18n="syncCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const STORAGE_KEY = 'vocab-box-cards';
 const LEGACY_KEY = 'ielts-vocab-cards';
@@ -979,6 +1037,14 @@ const I18N = {
       syncUnreachable: 'Couldn’t reach the sync server. Check your connection and try again.',
       syncRejected: 'The sync server turned this deck down — it may be over the size limit.',
       syncImportConfirm: 'This backup includes sync code {code}. Turn on sync with it on this device?',
+      joinTitle: 'Join your synced deck', joinSyncedCount: 'The synced deck has {n}.',
+      joinWordsLegend: 'Words',
+      joinCombine: 'Combine', joinCombineHint: 'Keep the words on this device and add the synced ones.',
+      joinReplace: 'Replace', joinReplaceHint: 'Use only the synced deck. {n} on this device will be removed — a backup file downloads first.',
+      joinReplaceConfirm: 'Remove {n} from this device? A backup file of them downloads first.',
+      joinSettingsLegend: 'Appearance & settings',
+      shareSettings: 'Use the same theme and settings on all devices',
+      shareSettingsNote: 'Theme, card color, language, voice, direction and typing. Background images and card photos stay on each device.',
 
       themeBg: 'Background — pick a theme, or upload your own image.',
       themeCard: 'Card color — pick one, choose your own, or use a photo.',
@@ -1098,6 +1164,14 @@ const I18N = {
       syncUnreachable: 'Не удалось связаться с сервером синхронизации. Проверьте подключение и попробуйте снова.',
       syncRejected: 'Сервер синхронизации не принял эти слова — возможно, превышен лимит размера.',
       syncImportConfirm: 'В этой копии есть код синхронизации {code}. Включить с ним синхронизацию на этом устройстве?',
+      joinTitle: 'Подключение к синхронизированным словам', joinSyncedCount: 'Синхронизировано: {n}.',
+      joinWordsLegend: 'Слова',
+      joinCombine: 'Объединить', joinCombineHint: 'Оставить слова на этом устройстве и добавить синхронизированные.',
+      joinReplace: 'Заменить', joinReplaceHint: 'Оставить только синхронизированные слова. С этого устройства будет удалено: {n} — сначала скачается резервная копия.',
+      joinReplaceConfirm: 'Удалить с этого устройства {n}? Сначала скачается их резервная копия.',
+      joinSettingsLegend: 'Оформление и настройки',
+      shareSettings: 'Одинаковые тема и настройки на всех устройствах',
+      shareSettingsNote: 'Тема, цвет карточек, язык, голос, направление и ввод. Фоновые изображения и фото на карточках у каждого устройства свои.',
 
       themeBg: 'Фон — выберите тему или загрузите своё изображение.',
       themeCard: 'Цвет карточки — выберите готовый, свой или фото.',
@@ -1219,6 +1293,14 @@ const I18N = {
       syncUnreachable: 'Sinxronlash serveriga ulanib boʻlmadi. Internetni tekshirib, qaytadan urinib koʻring.',
       syncRejected: 'Sinxronlash serveri bu soʻzlarni qabul qilmadi — hajm chegarasidan oshgan boʻlishi mumkin.',
       syncImportConfirm: 'Bu zaxira nusxada {code} sinxronlash kodi bor. Shu qurilmada u bilan sinxronlash yoqilsinmi?',
+      joinTitle: 'Sinxronlangan soʻzlarga ulanish', joinSyncedCount: '{n} sinxronlangan.',
+      joinWordsLegend: 'Soʻzlar',
+      joinCombine: 'Birlashtirish', joinCombineHint: 'Bu qurilmadagi soʻzlarni saqlab, sinxronlanganlarini qoʻshish.',
+      joinReplace: 'Almashtirish', joinReplaceHint: 'Faqat sinxronlangan soʻzlar qoladi. Bu qurilmadan {n} oʻchiriladi — avval zaxira fayl yuklab olinadi.',
+      joinReplaceConfirm: 'Bu qurilmadan {n} oʻchirilsinmi? Avval ularning zaxira fayli yuklab olinadi.',
+      joinSettingsLegend: 'Dizayn va sozlamalar',
+      shareSettings: 'Barcha qurilmalarda bir xil mavzu va sozlamalar',
+      shareSettingsNote: 'Mavzu, kartochka rangi, til, ovoz, yoʻnalish va yozish. Fon rasmlari va kartochkadagi rasmlar har bir qurilmada alohida qoladi.',
 
       themeBg: 'Fon — mavzu tanlang yoki oʻz rasmingizni yuklang.',
       themeCard: 'Kartochka rangi — tayyorini tanlang, oʻzingiznikini kiriting yoki rasm qoʻying.',
@@ -1369,13 +1451,13 @@ function relocalize(){
   renderCard(false);
 }
 
-let settings = { direction:'normal', typing:false, voice:'en-US', learnView:'cards', lang:null };
+let settings = { direction:'normal', typing:false, voice:'en-US', learnView:'cards', lang:null, sharedChangedAt:0 };
 let activity = {};
 // Sync state, declared early because loading and saving use it. The sync
 // engine itself is in the Sync section near the end.
 let tombstones = [];
 let deviceId = '';
-let sync = { code: null, version: 0, lastSynced: 0, dirty: false };
+let sync = { code: null, version: 0, lastSynced: 0, dirty: false, shareSettings: false, adoptPending: false };
 let applyingRemote = false;
 let changeCounter = 0;
 
@@ -1449,7 +1531,10 @@ function loadAll(){
   try{
     const s = JSON.parse(localStorage.getItem(SYNC_KEY) || 'null');
     if(s && typeof s.code === 'string' && normalizeCode(s.code) === s.code){
-      sync = {code: s.code, version: +s.version || 0, lastSynced: +s.lastSynced || 0, dirty: !!s.dirty};
+      // Devices already syncing before shared settings existed start with
+      // sharing off, so an update never changes anyone's look by surprise.
+      sync = {code: s.code, version: +s.version || 0, lastSynced: +s.lastSynced || 0, dirty: !!s.dirty,
+              shareSettings: s.shareSettings === true, adoptPending: !!s.adoptPending};
     }
   }catch(e){}
 }
@@ -1629,6 +1714,7 @@ function renderCardSwatches(){
       localStorage.setItem(CARD_KEY, c.id);
       localStorage.removeItem(CARD_IMAGE_KEY);
       applyCardColor();
+      noteSettingsChange();
     });
     wrap.appendChild(s);
   });
@@ -1647,6 +1733,7 @@ function renderSwatches(){
       localStorage.setItem(THEME_KEY, th.id);
       localStorage.removeItem(BG_IMAGE_KEY);
       applyTheme();
+      noteSettingsChange();
     });
     wrap.appendChild(s);
   });
@@ -1740,13 +1827,19 @@ function exportBackup(){
   };
   // The code is the only way back to a synced deck, so a backup keeps it.
   if(sync.code) data.syncCode = formatCode(sync.code);
+  downloadJson(data, 'vocab-box-backup-' + todayKey(0) + '.json');
+  setBackupMsg(t('backupDone'));
+}
+
+// Hands the browser a JSON file to save. The URL is released a minute later
+// rather than straight away, which can cancel the download in some browsers.
+function downloadJson(data, filename){
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'vocab-box-backup-' + todayKey(0) + '.json';
+  a.download = filename;
   a.click();
-  URL.revokeObjectURL(a.href);
-  setBackupMsg(t('backupDone'));
+  setTimeout(() => URL.revokeObjectURL(a.href), 60000);
 }
 
 function importBackup(file){
@@ -2670,7 +2763,7 @@ function renderChips(){
 
 document.getElementById('dirChip').addEventListener('click', ()=>{
   settings.direction = settings.direction === 'normal' ? 'reverse' : 'normal';
-  saveSettings();
+  noteSettingsChange();
   renderChips();
   flipped = false; answered = false; lastAnswerCorrect = null;
   renderCard(false);
@@ -2684,7 +2777,7 @@ document.getElementById('viewChip').addEventListener('click', ()=>{
 });
 document.getElementById('typeChip').addEventListener('click', ()=>{
   settings.typing = !settings.typing;
-  saveSettings();
+  noteSettingsChange();
   renderChips();
   flipped = false; answered = false; lastAnswerCorrect = null;
   renderCard(false);
@@ -2727,7 +2820,7 @@ document.querySelectorAll('.tab-btn').forEach(b=>{
 
 document.getElementById('voiceChip').addEventListener('click', ()=>{
   settings.voice = settings.voice === 'en-US' ? 'en-GB' : 'en-US';
-  saveSettings();
+  noteSettingsChange();
   renderChips();
 });
 
@@ -2749,12 +2842,14 @@ document.getElementById('clearBgBtn').addEventListener('click', ()=>{
   localStorage.removeItem(CARD_IMAGE_KEY);
   applyTheme();
   applyCardColor();
+  noteSettingsChange();
 });
 
 document.getElementById('cardColorInput').addEventListener('input', (e)=>{
   localStorage.setItem(CARD_KEY, e.target.value);
   localStorage.removeItem(CARD_IMAGE_KEY);
   applyCardColor();
+  noteSettingsChange();
 });
 
 document.getElementById('exportBtn').addEventListener('click', exportBackup);
@@ -2831,6 +2926,7 @@ function renderLangOptions(){
       b.textContent = code.toUpperCase();
       b.addEventListener('click', ()=>{
         setLang(code, true);
+        noteSettingsChange();
         relocalize();
       });
       wrap.appendChild(b);
@@ -2951,7 +3047,7 @@ function syncCard(c){
 // A deck from the server is untrusted: keep only well-formed entries, so a
 // malformed deck can never break the app or damage local data.
 function readDeck(d){
-  const out = {cards: [], tombstones: [], activity: {}};
+  const out = {cards: [], tombstones: [], activity: {}, settings: null};
   if(!d || typeof d !== 'object') return out;
   if(Array.isArray(d.cards)) d.cards.forEach(c=>{
     if(c && typeof c.word === 'string' && typeof c.translation === 'string'
@@ -2962,6 +3058,7 @@ function readDeck(d){
       out.tombstones.push({word: cardKey(tb.word), changedAt: +tb.changedAt, deleted: true});
     }
   });
+  out.settings = readSettingsUnit(d.settings);
   if(d.activity && typeof d.activity === 'object') Object.keys(d.activity).forEach(day=>{
     const v = d.activity[day];
     if(!/^\d{4}-\d{2}-\d{2}$/.test(day) || !v || typeof v !== 'object') return;
@@ -3006,7 +3103,7 @@ function mergeDecks(a, b, now){
     d.cards.forEach(offer);
     d.tombstones.forEach(tb=>{ if(tb.changedAt >= cutoff) offer(tb); });
   });
-  const out = {cards: [], tombstones: [], activity: {}};
+  const out = {cards: [], tombstones: [], activity: {}, settings: pickSettings(a.settings, b.settings)};
   [...best.keys()].sort().forEach(k=>{
     const e = best.get(k);
     (e.deleted ? out.tombstones : out.cards).push(e);
@@ -3024,12 +3121,79 @@ function mergeDecks(a, b, now){
 }
 
 function emptyDeck(){
-  return {cards: [], tombstones: [], activity: {}};
+  return {cards: [], tombstones: [], activity: {}, settings: null};
 }
 
-// This device's data in synced form.
-function localDeck(now){
-  return mergeDecks(readDeck({cards, tombstones, activity}), emptyDeck(), now);
+// This device's data in synced form. The settings unit is included only when
+// this device shares its look and settings.
+function localDeck(now, share){
+  const shared = share === undefined ? sync.shareSettings : share;
+  return mergeDecks(readDeck({cards, tombstones, activity, settings: shared ? localSettingsUnit() : null}), emptyDeck(), now);
+}
+
+// Look and study settings shared between devices, as one unit with its own
+// edit time. Background images and card photos are never part of it: they
+// are too large to sync.
+function localSettingsUnit(){
+  const theme = localStorage.getItem(THEME_KEY);
+  return {
+    cardColor: (localStorage.getItem(CARD_KEY) || '#EFEAD9').toUpperCase(),
+    direction: settings.direction === 'reverse' ? 'reverse' : 'normal',
+    lang: lang,
+    theme: THEMES.some(th => th.id === theme) ? theme : 'slate',
+    typing: !!settings.typing,
+    voice: settings.voice === 'en-GB' ? 'en-GB' : 'en-US',
+    changedAt: +settings.sharedChangedAt || 0
+  };
+}
+
+// Each field is checked on its own, so one unexpected value drops that field
+// rather than the whole unit. Keys come out in a fixed order for comparison.
+function readSettingsUnit(x){
+  if(!x || typeof x !== 'object' || !Number.isFinite(+x.changedAt)) return null;
+  const u = {};
+  if(typeof x.cardColor === 'string' && /^#[0-9A-Fa-f]{6}$/.test(x.cardColor)) u.cardColor = x.cardColor.toUpperCase();
+  if(x.direction === 'normal' || x.direction === 'reverse') u.direction = x.direction;
+  if(typeof x.lang === 'string' && I18N[x.lang]) u.lang = x.lang;
+  if(THEMES.some(th => th.id === x.theme)) u.theme = x.theme;
+  if(typeof x.typing === 'boolean') u.typing = x.typing;
+  if(x.voice === 'en-US' || x.voice === 'en-GB') u.voice = x.voice;
+  u.changedAt = +x.changedAt;
+  return u;
+}
+
+// Newest edit wins; a tie falls back to comparing the whole unit, so every
+// device picks the same one.
+function pickSettings(a, b){
+  if(!a || !b) return a || b || null;
+  if(a.changedAt !== b.changedAt) return a.changedAt > b.changedAt ? a : b;
+  return JSON.stringify(a) > JSON.stringify(b) ? a : b;
+}
+
+// A deliberate change to a shared setting. It is stamped even while sharing
+// is off, but only sent while sharing is on.
+function noteSettingsChange(){
+  settings.sharedChangedAt = Date.now();
+  saveSettings();
+  if(sync.shareSettings) noteLocalChange();
+}
+
+// Takes on a shared settings unit. Only fields present are applied, and the
+// local background image and card photo are left alone.
+function applySharedSettings(u){
+  if(!u) return;
+  const study = (u.direction && u.direction !== settings.direction)
+    || (typeof u.typing === 'boolean' && u.typing !== settings.typing);
+  if(u.theme){ localStorage.setItem(THEME_KEY, u.theme); applyTheme(); }
+  if(u.cardColor){ localStorage.setItem(CARD_KEY, u.cardColor); applyCardColor(); }
+  if(u.direction) settings.direction = u.direction;
+  if(typeof u.typing === 'boolean') settings.typing = u.typing;
+  if(u.voice) settings.voice = u.voice;
+  settings.sharedChangedAt = u.changedAt;
+  saveSettings();
+  if(study){ flipped = false; answered = false; lastAnswerCorrect = null; }
+  if(u.lang && u.lang !== lang) setLang(u.lang, true);
+  relocalize();
 }
 
 // Writes a merged deck into local state. Existing card objects are updated
@@ -3130,11 +3294,22 @@ async function syncNow(){
       if(sync.code !== code) return;                    // sync was stopped meanwhile
       if(!remote || typeof remote.version !== 'number') throw new Error('unexpected response');
       const now = Date.now();
-      const local = localDeck(now);
       const theirs = mergeDecks(readDeck(remote.deck), emptyDeck(), now);
+      // Sharing was just switched on: like joining, take on the shared look.
+      if(sync.shareSettings && sync.adoptPending){
+        if(theirs.settings) applySharedSettings(theirs.settings);
+        sync.adoptPending = false;
+        saveSyncState();
+      }
+      const local = localDeck(now);
       const merged = mergeDecks(local, theirs, now);
       const mergedJson = JSON.stringify(merged);
-      if(mergedJson !== JSON.stringify(local)) applyDeck(merged);
+      const body = d => JSON.stringify([d.cards, d.tombstones, d.activity]);
+      if(body(merged) !== body(local)) applyDeck(merged);
+      // A device that doesn't share settings still carries the shared unit
+      // through unchanged; it just never applies it.
+      if(sync.shareSettings && merged.settings
+         && JSON.stringify(merged.settings) !== JSON.stringify(local.settings)) applySharedSettings(merged.settings);
       if(remote.status === 'ok' && mergedJson === JSON.stringify(theirs)){
         finishSync(remote.version, startedAt);         // the server already has all of it
         return;
@@ -3208,9 +3383,10 @@ async function turnOnSync(){
     // server answers with a conflict and we draw another.
     for(let attempt = 0; attempt < 3; attempt++){
       const code = randomCrockford(10);
-      const res = await rpc('put_deck', {code, deck: localDeck(Date.now()), expected_version: 0});
+      const res = await rpc('put_deck', {code, deck: localDeck(Date.now(), true), expected_version: 0});
       if(res && res.status === 'ok'){
-        sync = {code, version: res.version, lastSynced: Date.now(), dirty: changeCounter !== startedAt};
+        sync = {code, version: res.version, lastSynced: Date.now(), dirty: changeCounter !== startedAt,
+                shareSettings: true, adoptPending: false};
         saveSyncState();
         setSyncStatus('synced');
         if(sync.dirty) syncTimer = setTimeout(syncNow, SYNC_DEBOUNCE);
@@ -3227,8 +3403,9 @@ async function turnOnSync(){
 }
 
 // Joins an existing synced deck and resolves to true once this device has
-// joined. The fetched deck is merged in before anything is pushed, so the
-// joined deck is on screen even if the push that follows fails.
+// joined. It asks first how to treat this device's words and settings; the
+// choice is then merged in before anything is pushed, so the joined deck is
+// on screen even if the push that follows fails.
 async function connectWithCode(input){
   if(syncBusy || sync.code) return false;
   const code = normalizeCode(input);
@@ -3246,10 +3423,27 @@ async function connectWithCode(input){
   }
   syncBusy = false;
   if(syncMsg){ renderSyncPanel(); return false; }
+  renderSyncPanel();
   const now = Date.now();
-  applyDeck(mergeDecks(localDeck(now), mergeDecks(readDeck(remote.deck), emptyDeck(), now), now));
-  sync = {code, version: remote.version, lastSynced: Date.now(), dirty: true};
+  const theirs = mergeDecks(readDeck(remote.deck), emptyDeck(), now);
+  const synced = new Set(theirs.cards.map(c => cardKey(c.word)));
+  const own = cards.filter(c => !synced.has(cardKey(c.word))).length;
+  const choice = await askJoinChoices(own, theirs.cards.length);
+  if(!choice || sync.code) return false;
+  if(choice.words === 'replace'){
+    // Nothing is discarded until a copy of it has been handed to the browser.
+    downloadJson({app: 'vocab-box', version: 1, exportedAt: new Date().toISOString(), cards: cards.slice(), activity},
+                 'vocab-box-before-replace-' + todayKey(0) + '.json');
+  }
+  // Replace keeps only this device's review counts, which are not words.
+  const mine = localDeck(now, false);
+  if(choice.words === 'replace'){ mine.cards = []; mine.tombstones = []; }
+  applyDeck(mergeDecks(mine, theirs, now));
+  sync = {code, version: remote.version, lastSynced: Date.now(), dirty: true,
+          shareSettings: choice.share, adoptPending: false};
   saveSyncState();
+  // A joining device takes on the shared look instead of imposing its own.
+  if(choice.share && theirs.settings) applySharedSettings(theirs.settings);
   syncUi = 'idle';
   syncCodeDraft = '';
   setSyncStatus('synced');
@@ -3258,11 +3452,57 @@ async function connectWithCode(input){
   return true;
 }
 
+// Asks how to join before anything is merged. Resolves to {words, share}, or
+// null if cancelled. The words question is only asked when this device has
+// words the synced deck doesn't.
+function askJoinChoices(own, syncedCount){
+  return new Promise(resolve=>{
+    const dlg = document.getElementById('joinDialog');
+    const go = document.getElementById('joinGo');
+    const cancel = document.getElementById('joinCancel');
+    const app = document.querySelector('.app');
+    const back = document.activeElement;
+    document.getElementById('joinSub').textContent = t('joinSyncedCount', {n: count('word', syncedCount)});
+    document.getElementById('joinWords').hidden = own === 0;
+    document.getElementById('joinReplaceHint').textContent = t('joinReplaceHint', {n: count('word', own)});
+    dlg.querySelector('input[name="joinWords"][value="combine"]').checked = true;
+    document.getElementById('joinShare').checked = true;
+    dlg.hidden = false;
+    app.inert = true;
+    go.focus();
+    const close = result=>{
+      dlg.hidden = true;
+      app.inert = false;
+      go.removeEventListener('click', onGo);
+      cancel.removeEventListener('click', onCancel);
+      dlg.removeEventListener('keydown', onKey);
+      // Return focus to whatever opened this. That button may be gone (the
+      // sync panel re-renders while the code is checked) or still disabled,
+      // so fall back to the code field it came from.
+      const target = [back, document.getElementById('syncCodeInput'), document.getElementById('landingCodeInput')]
+        .find(el => el && el.isConnected && el !== document.body && !el.disabled && el.getClientRects().length);
+      if(target) target.focus();
+      resolve(result);
+    };
+    const onGo = ()=>{
+      const replace = own > 0 && dlg.querySelector('input[name="joinWords"]:checked').value === 'replace';
+      // Replacing discards words, so it needs a second, explicit yes.
+      if(replace && !confirm(t('joinReplaceConfirm', {n: count('word', own)}))) return;
+      close({words: replace ? 'replace' : 'combine', share: document.getElementById('joinShare').checked});
+    };
+    const onCancel = ()=> close(null);
+    const onKey = e=>{ if(e.key === 'Escape') close(null); };
+    go.addEventListener('click', onGo);
+    cancel.addEventListener('click', onCancel);
+    dlg.addEventListener('keydown', onKey);
+  });
+}
+
 function stopSync(){
   if(!confirm(t('syncStopConfirm'))) return;
   clearTimeout(syncTimer);
   clearTimeout(retryTimer);
-  sync = {code: null, version: 0, lastSynced: 0, dirty: false};
+  sync = {code: null, version: 0, lastSynced: 0, dirty: false, shareSettings: false, adoptPending: false};
   saveSyncState();
   syncMsg = '';
   setSyncStatus('off');
@@ -3316,6 +3556,9 @@ function renderSyncPanel(){
         '<button class="btn-secondary" id="syncCopyBtn">' + t('syncCopy') + '</button>' +
       '</div>' +
       '<p class="sync-warn">' + t('syncWarning') + '</p>' +
+      '<label class="share-toggle"><input type="checkbox" id="syncShareToggle"' + (sync.shareSettings ? ' checked' : '') + '>' +
+        '<span>' + t('shareSettings') + '</span></label>' +
+      '<p class="share-note">' + t('shareSettingsNote') + '</p>' +
       '<button class="btn-muted" id="syncStopBtn">' + t('syncStop') + '</button>';
   } else if(syncUi === 'enter'){
     html +=
@@ -3357,6 +3600,14 @@ function renderSyncPanel(){
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(formatCode(sync.code)).then(done, select);
     } else select();
+  });
+  const share = document.getElementById('syncShareToggle');
+  if(share) share.addEventListener('change', ()=>{
+    sync.shareSettings = share.checked;
+    // Switching on works like joining: this device takes on the shared look.
+    sync.adoptPending = share.checked;
+    saveSyncState();
+    if(share.checked) syncNow();
   });
   const input = document.getElementById('syncCodeInput');
   if(input){

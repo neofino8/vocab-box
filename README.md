@@ -44,6 +44,7 @@ Answer **Good** and the word moves up a box, so you see it less often. Answer **
 **Sync**
 - Optional sync between your phone and computer with a sync code — no account
 - Changes merge card by card, so studying on two devices doesn't overwrite either
+- When a device joins, choose to combine its words with the synced deck or replace them (a backup file is downloaded first), and whether to use the same theme and settings everywhere
 
 **Appearance**
 - Eight color themes
@@ -53,7 +54,7 @@ Answer **Good** and the word moves up a box, so you see it less often. Answer **
 
 Your words are stored in your own browser and stay on your device unless you turn on sync. There is no account to create.
 
-**If you turn on sync**, your deck — words, translations, box progress and review counts — is stored in a [Supabase](https://supabase.com) database so your other devices can reach it. It is filed under a SHA-256 hash of your sync code; the code itself is never stored, and no account or personal details are attached. Anyone who has your code can read and change your synced deck, so keep it to yourself. Settings, themes and background images always stay on the device. Stopping sync keeps your words on that device, and the synced copy stays online for your other devices.
+**If you turn on sync**, your deck — words, translations, box progress and review counts — is stored in a [Supabase](https://supabase.com) database so your other devices can reach it. It is filed under a SHA-256 hash of your sync code; the code itself is never stored, and no account or personal details are attached. Anyone who has your code can read and change your synced deck, so keep it to yourself. If the device also shares appearance and settings (on by default), your theme, card color, interface language, voice, direction and typing mode are synced too. Background images and card photos always stay on the device. Stopping sync keeps your words on that device, and the synced copy stays online for your other devices.
 
 The site uses [GoatCounter](https://www.goatcounter.com) for anonymous visit counts, which sets no cookies and collects no personal data.
 

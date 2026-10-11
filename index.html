@@ -694,6 +694,44 @@
     .title-row::after{ content:''; flex-basis:100%; order:1; }
     .about-link{ order:2; margin-left:auto; min-height:24px; padding:0 0 0 12px; font-size:11.5px; }
   }
+  /* Sync */
+  .sync-box{ margin-top:16px; padding-top:14px; border-top:1px solid var(--line); }
+  .sync-head{
+    display:flex; justify-content:space-between; align-items:center;
+    gap:6px 12px; flex-wrap:wrap; margin-bottom:8px;
+  }
+  .sync-title{ font-size:13px; font-weight:600; }
+  .sync-status{ display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--soft); }
+  .sync-dot{ width:7px; height:7px; border-radius:50%; background:var(--soft); flex-shrink:0; }
+  .sync-status.st-synced .sync-dot{ background:var(--accent); }
+  .sync-status.st-error .sync-dot{ background:#E0868E; }
+  .sync-text{ font-size:12px; color:var(--soft); line-height:1.5; margin:0 0 10px; }
+  .sync-label{
+    font-size:10.5px; color:var(--soft); text-transform:uppercase;
+    letter-spacing:.5px; margin-bottom:6px;
+  }
+  .sync-code-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .sync-code{
+    font-family:'IBM Plex Mono', monospace; font-size:18px; font-weight:500; letter-spacing:1.5px;
+    color:var(--paper); background:rgba(0,0,0,0.22); padding:7px 12px; border-radius:6px;
+    -webkit-user-select:all; user-select:all;
+  }
+  .sync-warn{ font-size:12px; color:var(--accent); line-height:1.5; margin:10px 0 12px; }
+  .sync-enter{ display:flex; gap:8px; flex-wrap:wrap; }
+  /* 16px keeps iOS from zooming the page when the field is focused. */
+  .sync-input{
+    flex:1 1 150px; min-width:0;
+    background:rgba(0,0,0,0.28); color:var(--paper);
+    border:1px solid var(--line); border-radius:6px; padding:9px 10px;
+    font-family:'IBM Plex Mono', monospace; font-size:16px; letter-spacing:1px; text-transform:uppercase;
+  }
+  .sync-input::placeholder{ color:var(--soft); }
+  .sync-msg{ font-size:12px; color:var(--accent); line-height:1.5; margin-top:8px; min-height:16px; }
+  .sync-box button:disabled{ opacity:.5; cursor:default; }
+  @media (prefers-reduced-motion: no-preference){
+    .sync-status.st-syncing .sync-dot{ animation:syncPulse .9s ease-in-out infinite alternate; }
+    @keyframes syncPulse{ from{ opacity:.3; } to{ opacity:1; } }
+  }
 </style>
 </head>
 <body>
@@ -720,7 +758,7 @@
     <ul class="landing-points anim-3">
       <li><b data-i18n="p1t">Your words.</b> <span data-i18n="p1b">Paste any list, any language pair. Not someone else&rsquo;s curriculum.</span></li>
       <li><b data-i18n="p2t">Four ways to study.</b> <span data-i18n="p2b">Learn, review, quiz, and a 60-second match challenge.</span></li>
-      <li><b data-i18n="p3t">Private and free.</b> <span data-i18n="p3b">No account, no cost. Everything stays in your browser.</span></li>
+      <li><b data-i18n="p3t">Private and free.</b> <span data-i18n="p3b">No account, no cost. Your words stay on your device unless you turn on sync.</span></li>
     </ul>
     <div class="landing-actions anim-4">
       <button class="btn-landing" id="landingSample" data-i18n="landingSample">Start with 20 sample words</button>
@@ -757,6 +795,7 @@
       <input type="file" id="importFile" accept=".json,application/json">
     </div>
     <div class="backup-msg" id="backupMsg"></div>
+    <div class="sync-box" id="syncBox"></div>
   </div>
 
   <div class="theme-panel" id="themePanel">
@@ -815,8 +854,12 @@ const SETTINGS_KEY = 'vocab-box-settings';
 const ACTIVITY_KEY = 'vocab-box-activity';
 const CARD_KEY = 'vocab-box-card-color';
 const CARD_IMAGE_KEY = 'vocab-box-card-image';
+const SYNC_KEY = 'vocab-box-sync';
+const DEVICE_KEY = 'vocab-box-device';
+const TOMBSTONE_KEY = 'vocab-box-tombstones';
 const DAY = 86400000;
 const INTERVAL_DAYS = {1:1, 2:2, 3:4, 4:7, 5:14};
+const TOMBSTONE_TTL = 60 * DAY;
 
 // `soft` is the muted text colour. It is drawn on the theme's panel, the
 // lightest surface it sits on, so it must reach 4.5:1 against `panel`.
@@ -866,7 +909,10 @@ const I18N = {
     plurals: {
       word: { one: 'word', other: 'words' },
       card: { one: 'card', other: 'cards' },
-      pair: { one: 'pair', other: 'pairs' }
+      pair: { one: 'pair', other: 'pairs' },
+      minute: { one: 'minute', other: 'minutes' },
+      hour: { one: 'hour', other: 'hours' },
+      day: { one: 'day', other: 'days' }
     },
     t: {
       docTitle: 'Vocab Box — spaced-repetition flashcards',
@@ -878,7 +924,7 @@ const I18N = {
       landingLede: 'Vocab Box uses the Leitner system: words you know come back rarely, words you forget come back tomorrow. Reviewing something just before you’d forget it is what moves it into long-term memory.',
       p1t: 'Your words.', p1b: 'Paste any list, any language pair. Not someone else’s curriculum.',
       p2t: 'Four ways to study.', p2b: 'Learn, review, quiz, and a 60-second match challenge.',
-      p3t: 'Private and free.', p3b: 'No account, no cost. Everything stays in your browser.',
+      p3t: 'Private and free.', p3b: 'No account, no cost. Your words stay on your device unless you turn on sync.',
       landingSample: 'Start with 20 sample words', landingAdd: 'Add my own list',
 
       tabLearn: 'Learn', tabReview: 'Review', tabQuiz: 'Quiz', tabMatch: 'Match',
@@ -893,6 +939,24 @@ const I18N = {
       backupDone: 'Backup downloaded.',
       backupBad: 'Could not read that file. Is it a Vocab Box backup?',
       imported: '{added} added', importedProgressed: ', {n} progressed',
+
+      syncTitle: 'Sync across devices',
+      syncIntro: 'Keep the same words on your phone and computer. No account — just a code.',
+      syncTurnOn: 'Turn on sync', syncHaveCode: 'I have a code',
+      syncEnterHelp: 'Enter the code from your other device. The words here are kept and combined with the synced ones.',
+      syncConnect: 'Connect', syncCancel: 'Cancel',
+      syncCodeLabel: 'Your sync code', syncCopy: 'Copy', syncCopied: 'Copied',
+      syncWarning: 'Write this code down — it’s the only way to reach your synced deck. Anyone who has it can see and change your words.',
+      syncStop: 'Stop syncing',
+      syncStopConfirm: 'Stop syncing on this device? Your words stay here, and the synced copy stays online for your other devices.',
+      syncStatusSyncing: 'Syncing…', syncStatusSynced: 'Synced',
+      syncStatusOffline: 'Offline — will retry', syncStatusError: 'Sync error',
+      syncLastSynced: 'last synced {when}', justNow: 'just now', timeAgo: '{n} ago',
+      syncBadCode: 'That doesn’t look like a sync code. It has 10 letters and digits, like 7KX2M-QP9RT.',
+      syncNotFound: 'No synced deck uses this code. Check it and try again.',
+      syncUnreachable: 'Couldn’t reach the sync server. Check your connection and try again.',
+      syncRejected: 'The sync server turned this deck down — it may be over the size limit.',
+      syncImportConfirm: 'This backup includes sync code {code}. Turn on sync with it on this device?',
 
       themeBg: 'Background — pick a theme, or upload your own image.',
       themeCard: 'Card color — pick one, choose your own, or use a photo.',
@@ -963,7 +1027,10 @@ const I18N = {
     plurals: {
       word: { one: 'слово', few: 'слова', many: 'слов' },
       card: { one: 'карточка', few: 'карточки', many: 'карточек' },
-      pair: { one: 'пара', few: 'пары', many: 'пар' }
+      pair: { one: 'пара', few: 'пары', many: 'пар' },
+      minute: { one: 'минуту', few: 'минуты', many: 'минут' },
+      hour: { one: 'час', few: 'часа', many: 'часов' },
+      day: { one: 'день', few: 'дня', many: 'дней' }
     },
     t: {
       docTitle: 'Vocab Box — карточки для запоминания слов',
@@ -975,7 +1042,7 @@ const I18N = {
       landingLede: 'Vocab Box работает по системе Лейтнера: слова, которые вы знаете, возвращаются редко, а забытые — уже завтра. Повторение прямо перед тем, как забыть, и переводит слово в долговременную память.',
       p1t: 'Ваши слова.', p1b: 'Вставьте любой список, любую пару языков. Никакой чужой программы.',
       p2t: 'Четыре режима.', p2b: 'Учить, повторять, тест и игра на скорость за 60 секунд.',
-      p3t: 'Бесплатно и приватно.', p3b: 'Без аккаунта и без оплаты. Всё хранится в вашем браузере.',
+      p3t: 'Бесплатно и приватно.', p3b: 'Без аккаунта и без оплаты. Слова хранятся на вашем устройстве, пока вы не включите синхронизацию.',
       landingSample: 'Начать с 20 готовых слов', landingAdd: 'Добавить свой список',
 
       tabLearn: 'Учить', tabReview: 'Повтор', tabQuiz: 'Тест', tabMatch: 'Пары',
@@ -990,6 +1057,24 @@ const I18N = {
       backupDone: 'Резервная копия скачана.',
       backupBad: 'Не удалось прочитать файл. Это резервная копия Vocab Box?',
       imported: 'добавлено: {added}', importedProgressed: ', обновлено: {n}',
+
+      syncTitle: 'Синхронизация между устройствами',
+      syncIntro: 'Одни и те же слова на телефоне и компьютере. Без аккаунта — только код.',
+      syncTurnOn: 'Включить синхронизацию', syncHaveCode: 'У меня есть код',
+      syncEnterHelp: 'Введите код с другого устройства. Слова на этом устройстве сохранятся и объединятся с синхронизированными.',
+      syncConnect: 'Подключить', syncCancel: 'Отмена',
+      syncCodeLabel: 'Ваш код синхронизации', syncCopy: 'Копировать', syncCopied: 'Скопировано',
+      syncWarning: 'Запишите этот код — только по нему можно добраться до синхронизированных слов. Любой, у кого он есть, может их видеть и менять.',
+      syncStop: 'Отключить синхронизацию',
+      syncStopConfirm: 'Отключить синхронизацию на этом устройстве? Слова останутся здесь, а синхронизированная копия — в сети для других устройств.',
+      syncStatusSyncing: 'Синхронизация…', syncStatusSynced: 'Синхронизировано',
+      syncStatusOffline: 'Нет сети — повторим позже', syncStatusError: 'Ошибка синхронизации',
+      syncLastSynced: 'последняя синхронизация {when}', justNow: 'только что', timeAgo: '{n} назад',
+      syncBadCode: 'Это не похоже на код синхронизации. В нём 10 букв и цифр, например 7KX2M-QP9RT.',
+      syncNotFound: 'С этим кодом нет синхронизированных слов. Проверьте код и попробуйте снова.',
+      syncUnreachable: 'Не удалось связаться с сервером синхронизации. Проверьте подключение и попробуйте снова.',
+      syncRejected: 'Сервер синхронизации не принял эти слова — возможно, превышен лимит размера.',
+      syncImportConfirm: 'В этой копии есть код синхронизации {code}. Включить с ним синхронизацию на этом устройстве?',
 
       themeBg: 'Фон — выберите тему или загрузите своё изображение.',
       themeCard: 'Цвет карточки — выберите готовый, свой или фото.',
@@ -1062,7 +1147,10 @@ const I18N = {
     plurals: {
       word: { other: 'ta soʻz' },
       card: { other: 'ta kartochka' },
-      pair: { other: 'ta juftlik' }
+      pair: { other: 'ta juftlik' },
+      minute: { other: 'daqiqa' },
+      hour: { other: 'soat' },
+      day: { other: 'kun' }
     },
     t: {
       docTitle: 'Vocab Box — intervalli takrorlash kartochkalari',
@@ -1074,7 +1162,7 @@ const I18N = {
       landingLede: 'Vocab Box Leytner tizimida ishlaydi: siz biladigan soʻzlar kamdan-kam qaytadi, unutganlaringiz esa ertaga qaytadi. Soʻzni unutishingizdan sal oldin takrorlash uni uzoq muddatli xotiraga oʻtkazadi.',
       p1t: 'Oʻz soʻzlaringiz.', p1b: 'Istalgan roʻyxatni, istalgan til juftligini joylashtiring. Birovning dasturi emas.',
       p2t: 'Toʻrt xil mashq.', p2b: 'Oʻrganish, takrorlash, test va 60 soniyalik tezlik oʻyini.',
-      p3t: 'Bepul va maxfiy.', p3b: 'Akkaunt ham, toʻlov ham kerak emas. Hammasi brauzeringizda qoladi.',
+      p3t: 'Bepul va maxfiy.', p3b: 'Akkaunt ham, toʻlov ham kerak emas. Sinxronlashni yoqmaguningizcha soʻzlaringiz qurilmangizda qoladi.',
       landingSample: '20 ta tayyor soʻz bilan boshlash', landingAdd: 'Oʻz roʻyxatimni qoʻshish',
 
       tabLearn: 'Oʻrganish', tabReview: 'Takror', tabQuiz: 'Test', tabMatch: 'Juftlik',
@@ -1089,6 +1177,24 @@ const I18N = {
       backupDone: 'Zaxira nusxa yuklab olindi.',
       backupBad: 'Faylni oʻqib boʻlmadi. Bu Vocab Box zaxira nusxasimi?',
       imported: '{added} qoʻshildi', importedProgressed: ', {n} yangilandi',
+
+      syncTitle: 'Qurilmalar oʻrtasida sinxronlash',
+      syncIntro: 'Telefon va kompyuterda bir xil soʻzlar. Akkaunt kerak emas — faqat kod.',
+      syncTurnOn: 'Sinxronlashni yoqish', syncHaveCode: 'Menda kod bor',
+      syncEnterHelp: 'Boshqa qurilmangizdagi kodni kiriting. Bu yerdagi soʻzlar saqlanadi va sinxronlangan soʻzlar bilan birlashtiriladi.',
+      syncConnect: 'Ulash', syncCancel: 'Bekor qilish',
+      syncCodeLabel: 'Sinxronlash kodingiz', syncCopy: 'Nusxalash', syncCopied: 'Nusxalandi',
+      syncWarning: 'Bu kodni yozib qoʻying — sinxronlangan soʻzlaringizga faqat u orqali kirish mumkin. Kodni bilgan har kim soʻzlaringizni koʻrishi va oʻzgartirishi mumkin.',
+      syncStop: 'Sinxronlashni oʻchirish',
+      syncStopConfirm: 'Bu qurilmada sinxronlash oʻchirilsinmi? Soʻzlaringiz shu yerda qoladi, sinxronlangan nusxa esa boshqa qurilmalaringiz uchun saqlanib qoladi.',
+      syncStatusSyncing: 'Sinxronlanmoqda…', syncStatusSynced: 'Sinxronlandi',
+      syncStatusOffline: 'Internet yoʻq — keyinroq qayta urinamiz', syncStatusError: 'Sinxronlashda xato',
+      syncLastSynced: 'oxirgi sinxronlash {when}', justNow: 'hozirgina', timeAgo: '{n} oldin',
+      syncBadCode: 'Bu sinxronlash kodiga oʻxshamaydi. Unda 10 ta harf va raqam bor, masalan 7KX2M-QP9RT.',
+      syncNotFound: 'Bu kod bilan sinxronlangan soʻzlar topilmadi. Kodni tekshirib, qaytadan urinib koʻring.',
+      syncUnreachable: 'Sinxronlash serveriga ulanib boʻlmadi. Internetni tekshirib, qaytadan urinib koʻring.',
+      syncRejected: 'Sinxronlash serveri bu soʻzlarni qabul qilmadi — hajm chegarasidan oshgan boʻlishi mumkin.',
+      syncImportConfirm: 'Bu zaxira nusxada {code} sinxronlash kodi bor. Shu qurilmada u bilan sinxronlash yoqilsinmi?',
 
       themeBg: 'Fon — mavzu tanlang yoki oʻz rasmingizni yuklang.',
       themeCard: 'Kartochka rangi — tayyorini tanlang, oʻzingiznikini kiriting yoki rasm qoʻying.',
@@ -1235,13 +1341,28 @@ function relocalize(){
   renderStats();
   renderStatsPanel();
   renderWordList();
+  renderSyncPanel();
   renderCard(false);
 }
 
 let settings = { direction:'normal', typing:false, voice:'en-US', learnView:'cards', lang:null };
 let activity = {};
+// Sync state, declared early because loading and saving use it. The sync
+// engine itself is in the Sync section near the end.
+let tombstones = [];
+let deviceId = '';
+let sync = { code: null, version: 0, lastSynced: 0, dirty: false };
+let applyingRemote = false;
+let changeCounter = 0;
 
 function loadAll(){
+  // One random id per device, so review counts from different devices add up
+  // instead of overwriting each other.
+  try{ deviceId = localStorage.getItem(DEVICE_KEY) || ''; }catch(e){}
+  if(!/^d[0-9A-Z]{10}$/.test(deviceId)){
+    deviceId = 'd' + randomCrockford(10);
+    try{ localStorage.setItem(DEVICE_KEY, deviceId); }catch(e){}
+  }
   try{
     let raw = localStorage.getItem(STORAGE_KEY);
     if(!raw){
@@ -1251,7 +1372,7 @@ function loadAll(){
     cards = raw ? JSON.parse(raw) : [];
     // Older saves (and some pasted lists) carry padded words, which broke
     // prefix matching in the filter. Repair once, and only write if it helped.
-    let padded = false;
+    let repaired = false;
     cards.forEach(c => {
       if(c.seen === undefined) c.seen = true;
       const word = String(c.word == null ? '' : c.word).trim();
@@ -1259,30 +1380,110 @@ function loadAll(){
       if(word !== c.word || translation !== c.translation){
         c.word = word;
         c.translation = translation;
-        padded = true;
+        repaired = true;
+      }
+      // Cards from before sync have no edit time. 0 means "unknown", which
+      // the merge treats as older than any real edit.
+      if(typeof c.changedAt !== 'number'){
+        c.changedAt = 0;
+        repaired = true;
       }
     });
-    if(padded) saveCards();
+    if(repaired) saveCards();
   }catch(e){ cards = []; }
+  try{
+    const tb = JSON.parse(localStorage.getItem(TOMBSTONE_KEY) || '[]');
+    const cutoff = Date.now() - TOMBSTONE_TTL;
+    tombstones = Array.isArray(tb) ? tb.filter(x => x && typeof x.word === 'string'
+      && typeof x.changedAt === 'number' && x.changedAt >= cutoff) : [];
+  }catch(e){ tombstones = []; }
   try{
     const s = localStorage.getItem(SETTINGS_KEY);
     if(s) settings = Object.assign(settings, JSON.parse(s));
   }catch(e){}
   try{
     const a = localStorage.getItem(ACTIVITY_KEY);
-    if(a) activity = JSON.parse(a);
+    if(a){
+      const raw = JSON.parse(a) || {};
+      let migrated = false;
+      activity = {};
+      Object.keys(raw).forEach(day=>{
+        const v = raw[day];
+        if(typeof v === 'number'){
+          // Before sync, counts were per day only, and all came from here.
+          if(v > 0) activity[day] = {[deviceId]: v};
+          migrated = true;
+        } else if(v && typeof v === 'object'){
+          Object.keys(v).forEach(dev=>{
+            if(v[dev] > 0) (activity[day] = activity[day] || {})[dev] = v[dev];
+          });
+        }
+      });
+      if(migrated) saveActivity();
+    }
   }catch(e){ activity = {}; }
+  try{
+    const s = JSON.parse(localStorage.getItem(SYNC_KEY) || 'null');
+    if(s && typeof s.code === 'string' && normalizeCode(s.code) === s.code){
+      sync = {code: s.code, version: +s.version || 0, lastSynced: +s.lastSynced || 0, dirty: !!s.dirty};
+    }
+  }catch(e){}
 }
 
 function saveCards(){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(cards)); }
   catch(e){ console.error('Storage error', e); }
+  noteLocalChange();
 }
 function saveSettings(){
   try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }catch(e){}
 }
 function saveActivity(){
   try{ localStorage.setItem(ACTIVITY_KEY, JSON.stringify(activity)); }catch(e){}
+  noteLocalChange();
+}
+function saveTombstones(){
+  try{ localStorage.setItem(TOMBSTONE_KEY, JSON.stringify(tombstones)); }catch(e){}
+  noteLocalChange();
+}
+
+// Cards are matched across devices by their word, ignoring case and padding.
+function cardKey(word){
+  return String(word == null ? '' : word).trim().toLowerCase();
+}
+// Records a deliberate change to a card's box, translation or seen state.
+function touch(card){
+  card.changedAt = Date.now();
+}
+// Edit time for a card being added. A new card carries no history, so it
+// gets `base` (0 unless it came with one) and cannot override progress made
+// on another device. Re-adding a word deleted here is deliberate, though, so
+// it gets a real time that beats the deletion, and the tombstone goes.
+function addedStamp(word, base){
+  const k = cardKey(word);
+  const i = tombstones.findIndex(tb => tb.word === k);
+  if(i === -1) return base || 0;
+  tombstones.splice(i, 1);
+  saveTombstones();
+  return Date.now();
+}
+// A deletion is recorded as a tombstone so it spreads to other devices
+// instead of being brought back by them.
+function addTombstones(words){
+  const now = Date.now();
+  const byKey = new Map(tombstones.map(tb => [tb.word, tb]));
+  words.forEach(w=>{
+    const k = cardKey(w);
+    if(k) byKey.set(k, {word: k, changedAt: now, deleted: true});
+  });
+  tombstones = [...byKey.values()];
+  saveTombstones();
+}
+function clearTombstones(words){
+  const ks = new Set(words.map(cardKey));
+  const before = tombstones.length;
+  tombstones = tombstones.filter(tb => !ks.has(tb.word));
+  if(tombstones.length !== before) saveTombstones();
 }
 
 function todayKey(offsetDays){
@@ -1292,14 +1493,23 @@ function todayKey(offsetDays){
 
 function logReview(){
   const k = todayKey(0);
-  activity[k] = (activity[k]||0) + 1;
+  const day = activity[k] || (activity[k] = {});
+  day[deviceId] = (day[deviceId] || 0) + 1;
   saveActivity();
+}
+// Each device keeps its own count per day, so totals add up across devices
+// without counting anything twice.
+function dayTotal(k){
+  const day = activity[k];
+  let n = 0;
+  if(day) for(const dev in day) n += day[dev];
+  return n;
 }
 
 function computeStreak(){
   let streak = 0;
-  let offset = activity[todayKey(0)] ? 0 : 1;
-  while(activity[todayKey(offset)]){
+  let offset = dayTotal(todayKey(0)) ? 0 : 1;
+  while(dayTotal(todayKey(offset))){
     streak++;
     offset++;
   }
@@ -1307,15 +1517,16 @@ function computeStreak(){
 }
 
 function renderStatsPanel(){
-  const total = Object.values(activity).reduce((a,b)=>a+b,0);
+  const total = Object.keys(activity).reduce((n,k)=>n+dayTotal(k),0);
   let week = 0;
-  for(let i=0;i<7;i++){ week += activity[todayKey(i)]||0; }
+  for(let i=0;i<7;i++){ week += dayTotal(todayKey(i)); }
   document.getElementById('stStreak').textContent = computeStreak();
-  document.getElementById('stToday').textContent = activity[todayKey(0)]||0;
+  document.getElementById('stToday').textContent = dayTotal(todayKey(0));
   document.getElementById('stWeek').textContent = week;
   document.getElementById('stTotal').textContent = total;
   document.getElementById('stMastered').textContent = cards.filter(c=>c.box===5).length;
   document.getElementById('stCards').textContent = cards.length;
+  updateSyncStatusLine();
 }
 
 function applyTheme(){
@@ -1503,6 +1714,8 @@ function exportBackup(){
     exportedAt:new Date().toISOString(),
     cards, activity
   };
+  // The code is the only way back to a synced deck, so a backup keeps it.
+  if(sync.code) data.syncCode = formatCode(sync.code);
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -1526,6 +1739,7 @@ function importBackup(file){
           if((imp.box||1) > existing.box){
             existing.box = imp.box;
             existing.due = imp.due || Date.now();
+            touch(existing);
             updated++;
           }
         } else {
@@ -1535,14 +1749,24 @@ function importBackup(file){
             translation: imp.translation,
             box: Math.min(Math.max(imp.box||1,1),5),
             seen: imp.seen !== undefined ? imp.seen : true,
-            due: imp.due || Date.now()
+            due: imp.due || Date.now(),
+            changedAt: addedStamp(imp.word, typeof imp.changedAt === 'number' ? imp.changedAt : 0)
           });
           added++;
         }
       });
       if(data.activity && typeof data.activity === 'object'){
         Object.keys(data.activity).forEach(k=>{
-          activity[k] = Math.max(activity[k]||0, data.activity[k]);
+          if(!/^\d{4}-\d{2}-\d{2}$/.test(k)) return;
+          const v = data.activity[k];
+          // Older backups hold one count per day, newer ones one per device.
+          const src = (v && typeof v === 'object') ? v : {[deviceId]: v};
+          const day = activity[k] || (activity[k] = {});
+          Object.keys(src).forEach(dev=>{
+            const n = Math.floor(+src[dev]) || 0;
+            if(n > (day[dev] || 0)) day[dev] = n;
+          });
+          if(!Object.keys(day).length) delete activity[k];
         });
         saveActivity();
       }
@@ -1554,6 +1778,11 @@ function importBackup(file){
       practiceMode = false;
       renderCard(false);
       setBackupMsg(t('imported', {added: count('word', added)}) + (updated ? t('importedProgressed', {n: updated}) : '') + '.');
+      // Offer the backup's code, but never switch sync on without asking.
+      const code = normalizeCode(data.syncCode);
+      if(code && !sync.code && confirm(t('syncImportConfirm', {code: formatCode(code)}))){
+        connectWithCode(code);
+      }
     }catch(err){
       setBackupMsg(t('backupBad'));
     }
@@ -1605,6 +1834,7 @@ function parseBulk(text){
         dupSame.push(word);
       } else {
         existing.translation = translation;
+        touch(existing);
         dupChanged.push(word);
       }
     } else {
@@ -1613,7 +1843,8 @@ function parseBulk(text){
         word, translation,
         box: 1,
         seen: false,
-        due: Date.now()
+        due: Date.now(),
+        changedAt: addedStamp(word, 0)
       });
       added++;
     }
@@ -1655,7 +1886,8 @@ function loadSampleDeck(){
     if(cards.find(c => c.word.toLowerCase() === word.toLowerCase())) return;
     cards.push({
       id: Date.now() + '-' + Math.random().toString(36).slice(2,8),
-      word, translation, box:1, seen:false, due: Date.now()
+      word, translation, box:1, seen:false, due: Date.now(),
+      changedAt: addedStamp(word, 0)
     });
   });
   saveCards();
@@ -1675,6 +1907,7 @@ function moveWord(id, box){
   if(!card) return;
   card.box = Math.min(Math.max(box,1),5);
   card.due = Date.now();
+  touch(card);
   saveCards();
   buildQueue();
   renderStats();
@@ -1688,6 +1921,7 @@ function deleteWord(id){
   if(!card) return;
   lastDeleted = [card];
   cards = cards.filter(c => c.id !== id);
+  addTombstones([card.word]);
   queue = queue.filter(c => c.id !== id);
   if(current && current.id === id){
     current = null;
@@ -1706,6 +1940,7 @@ function deleteAllWords(){
   if(!confirm(t('confirmDeleteAll', {n: count('word', n)}))) return;
   lastDeleted = cards.slice();
   cards = [];
+  addTombstones(lastDeleted.map(c => c.word));
   queue = [];
   current = null;
   practiceMode = false;
@@ -1731,6 +1966,10 @@ function showUndo(message){
 
 function undoDelete(){
   if(!lastDeleted) return;
+  // Restoring is a fresh edit, so it beats the tombstone even if the deletion
+  // has already reached other devices.
+  lastDeleted.forEach(touch);
+  clearTombstones(lastDeleted.map(c => c.word));
   cards = cards.concat(lastDeleted);
   lastDeleted = null;
   clearTimeout(undoTimer);
@@ -1991,6 +2230,7 @@ function markKnown(card, box){
   card.seen = true;
   card.box = box;
   card.due = box === 1 ? Date.now() : Date.now() + INTERVAL_DAYS[box] * DAY;
+  touch(card);
   saveCards();
   renderStats();
   renderStatsPanel();
@@ -2100,6 +2340,7 @@ function answerQuiz(pickedId){
     card.box = 1;
     card.due = Date.now();
   }
+  touch(card);
   saveCards();
   logReview();
   renderStats();
@@ -2366,6 +2607,7 @@ function rate(good){
       const pos = Math.min(queue.length, 2);
       queue.splice(pos, 0, card);
     }
+    touch(card);
     saveCards();
   } else if(!good){
     const pos = Math.min(queue.length, 2);
@@ -2623,6 +2865,489 @@ document.getElementById('landingAdd').addEventListener('click', ()=>{
   document.getElementById('bulkInput').focus();
 });
 
+/* ---------- Sync ----------
+   Optional sync across devices through Supabase, keyed by a sync code rather
+   than an account. localStorage stays the source of truth: sync only ever
+   merges into it, so a failed request leaves local data exactly as it was.
+   The server side is supabase/schema.sql. */
+const SUPABASE_URL = 'https://ijzmmucpyykrhnhijgvc.supabase.co';
+// Publishable key: public by design. It can only call get_deck and put_deck;
+// the table itself is locked.
+const SUPABASE_KEY = 'sb_publishable_ycBKniW5lYW9b2CzuHSq_g_1iu_h-qW';
+const SYNC_DEBOUNCE = 3000;
+const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+
+let syncStatus = 'off';      // off | syncing | synced | offline | error
+let syncRunning = false;
+let syncAgain = false;
+let syncTimer = null;
+let retryTimer = null;
+let retryDelay = 0;
+let syncUi = 'idle';         // idle | enter (typing a code)
+let syncBusy = false;
+let syncMsg = '';
+let syncCodeDraft = '';
+
+function randomCrockford(n){
+  const bytes = new Uint8Array(n);
+  crypto.getRandomValues(bytes);
+  let s = '';
+  // 256 is a multiple of 32, so masking keeps every character equally likely.
+  for(let i = 0; i < n; i++) s += CROCKFORD[bytes[i] & 31];
+  return s;
+}
+
+// Mirrors _normalize_code in schema.sql: case, dashes and spaces are ignored,
+// I and L read as 1 and O as 0. Anything else is not a code.
+function normalizeCode(input){
+  const c = String(input == null ? '' : input).toUpperCase()
+    .replace(/[^0-9A-Z]/g, '').replace(/[IL]/g, '1').replace(/O/g, '0');
+  return /^[0-9ABCDEFGHJKMNPQRSTVWXYZ]{10}$/.test(c) ? c : null;
+}
+
+function formatCode(code){
+  return code.slice(0, 5) + '-' + code.slice(5);
+}
+
+// A card in synced form: no local id and every field normalised, so two
+// devices holding the same card produce identical JSON.
+function syncCard(c){
+  const box = Math.round(+c.box);
+  return {
+    word: String(c.word).trim(),
+    translation: String(c.translation).trim(),
+    box: Number.isFinite(box) ? Math.min(Math.max(box, 1), 5) : 1,
+    seen: !!c.seen,
+    due: Number.isFinite(+c.due) ? +c.due : 0,
+    changedAt: Number.isFinite(+c.changedAt) ? +c.changedAt : 0
+  };
+}
+
+// A deck from the server is untrusted: keep only well-formed entries, so a
+// malformed deck can never break the app or damage local data.
+function readDeck(d){
+  const out = {cards: [], tombstones: [], activity: {}};
+  if(!d || typeof d !== 'object') return out;
+  if(Array.isArray(d.cards)) d.cards.forEach(c=>{
+    if(c && typeof c.word === 'string' && typeof c.translation === 'string'
+       && c.word.trim() && c.translation.trim()) out.cards.push(syncCard(c));
+  });
+  if(Array.isArray(d.tombstones)) d.tombstones.forEach(tb=>{
+    if(tb && typeof tb.word === 'string' && cardKey(tb.word) && Number.isFinite(+tb.changedAt)){
+      out.tombstones.push({word: cardKey(tb.word), changedAt: +tb.changedAt, deleted: true});
+    }
+  });
+  if(d.activity && typeof d.activity === 'object') Object.keys(d.activity).forEach(day=>{
+    const v = d.activity[day];
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(day) || !v || typeof v !== 'object') return;
+    Object.keys(v).forEach(dev=>{
+      const n = Math.floor(+v[dev]);
+      if(n > 0 && dev.length <= 40) (out.activity[day] = out.activity[day] || {})[dev] = n;
+    });
+  });
+  return out;
+}
+
+function cardSig(c){
+  return JSON.stringify([c.word, c.translation, c.box, c.seen, c.due, c.changedAt]);
+}
+
+// True if entry `a` should replace entry `b` for the same word. This is a
+// strict total order, so every device merging the same data picks the same
+// winner whatever order the decks arrive in.
+function entryWins(a, b){
+  if(a.changedAt !== b.changedAt) return a.changedAt > b.changedAt;   // newest edit wins
+  if(!!a.deleted !== !!b.deleted) return !!a.deleted;                 // a deletion wins a tie
+  if(a.deleted) return false;                                         // same word, same time
+  // Ties are in practice cards from before sync (both 0), which carry no
+  // demotion history: take the higher box, then the larger translation.
+  // Plain < and > compare UTF-16 code units, never the device's locale.
+  if(a.box !== b.box) return a.box > b.box;
+  if(a.translation !== b.translation) return a.translation > b.translation;
+  return cardSig(a) > cardSig(b);                                     // seen, due, word case
+}
+
+// Merges two decks in synced form. Commutative, associative and idempotent,
+// and the output is sorted, so equal content always serialises identically.
+function mergeDecks(a, b, now){
+  const cutoff = now - TOMBSTONE_TTL;
+  const best = new Map();
+  const offer = e=>{
+    const k = cardKey(e.word);
+    const cur = best.get(k);
+    if(!cur || entryWins(e, cur)) best.set(k, e);
+  };
+  [a, b].forEach(d=>{
+    d.cards.forEach(offer);
+    d.tombstones.forEach(tb=>{ if(tb.changedAt >= cutoff) offer(tb); });
+  });
+  const out = {cards: [], tombstones: [], activity: {}};
+  [...best.keys()].sort().forEach(k=>{
+    const e = best.get(k);
+    (e.deleted ? out.tombstones : out.cards).push(e);
+  });
+  // Each device only ever raises its own counter, so the larger value per
+  // device and day is the true one.
+  const days = new Set(Object.keys(a.activity).concat(Object.keys(b.activity)));
+  [...days].sort().forEach(day=>{
+    const x = a.activity[day] || {}, y = b.activity[day] || {};
+    const devs = [...new Set(Object.keys(x).concat(Object.keys(y)))].sort();
+    out.activity[day] = {};
+    devs.forEach(dev=>{ out.activity[day][dev] = Math.max(x[dev] || 0, y[dev] || 0); });
+  });
+  return out;
+}
+
+function emptyDeck(){
+  return {cards: [], tombstones: [], activity: {}};
+}
+
+// This device's data in synced form.
+function localDeck(now){
+  return mergeDecks(readDeck({cards, tombstones, activity}), emptyDeck(), now);
+}
+
+// Writes a merged deck into local state. Existing card objects are updated
+// in place, keeping their local ids and order, so an open Learn session,
+// review card or quiz keeps working; cards new to this device go at the end.
+function applyDeck(merged){
+  const win = new Map(merged.cards.map(c => [cardKey(c.word), c]));
+  const kept = [];
+  const gone = new Set();
+  cards.forEach(c=>{
+    const k = cardKey(c.word), w = win.get(k);
+    if(w){ Object.assign(c, w); kept.push(c); win.delete(k); }
+    else gone.add(c);
+  });
+  win.forEach(w=>{
+    kept.push(Object.assign({id: Date.now() + '-' + Math.random().toString(36).slice(2,8)}, w));
+  });
+  cards = kept;
+  tombstones = merged.tombstones.map(tb => Object.assign({}, tb));
+  activity = JSON.parse(JSON.stringify(merged.activity));
+  applyingRemote = true;
+  try{ saveCards(); saveTombstones(); saveActivity(); }
+  finally{ applyingRemote = false; }
+  if(gone.size){
+    queue = queue.filter(c => !gone.has(c));
+    learnList = learnList.filter(c => !gone.has(c));
+    if(current && gone.has(current)) current = null;
+  }
+  renderStats();
+  renderStatsPanel();
+  renderWordList();
+  if(mode === 'learn') renderLearn();
+  else if(mode === 'review' && !current){
+    if(!practiceMode && queue.length === 0) buildQueue();
+    renderCard(false);
+  }
+}
+
+async function rpc(fn, body, keepalive){
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 15000);
+  try{
+    const res = await fetch(SUPABASE_URL + '/rest/v1/rpc/' + fn, {
+      method: 'POST',
+      headers: {'apikey': SUPABASE_KEY, 'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
+      signal: ctl.signal,
+      keepalive: !!keepalive
+    });
+    if(!res.ok){
+      let detail = '';
+      try{ detail = (await res.json()).message || ''; }catch(e){}
+      throw Object.assign(new Error(detail || ('HTTP ' + res.status)), {status: res.status});
+    }
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Network failures, timeouts, server errors and lost races are worth
+// retrying; a rejected request (bad code, deck too large) is not.
+function isTransient(err){
+  const s = err && err.status;
+  return !s || s >= 500 || s === 408 || s === 409 || s === 429;
+}
+
+function saveSyncState(){
+  try{ localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); }catch(e){}
+}
+
+// Called by every save of synced data. Flags the deck for a push and
+// schedules one shortly, so a burst of reviews becomes a single request.
+function noteLocalChange(){
+  if(applyingRemote) return;
+  changeCounter++;
+  if(!sync.code) return;
+  if(!sync.dirty){ sync.dirty = true; saveSyncState(); }
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(syncNow, SYNC_DEBOUNCE);
+}
+
+// Pull, merge, push. A stale write is refused by the server and comes back
+// with the current deck, which is merged in before trying again.
+async function syncNow(){
+  if(!sync.code) return;
+  if(syncRunning){ syncAgain = true; return; }
+  clearTimeout(syncTimer);
+  clearTimeout(retryTimer);
+  if(navigator.onLine === false){ setSyncStatus('offline'); return; }   // 'online' resumes it
+  syncRunning = true;
+  setSyncStatus('syncing');
+  const startedAt = changeCounter;
+  const code = sync.code;
+  try{
+    let remote = await rpc('get_deck', {code});
+    for(let attempt = 0; attempt < 5; attempt++){
+      if(sync.code !== code) return;                    // sync was stopped meanwhile
+      if(!remote || typeof remote.version !== 'number') throw new Error('unexpected response');
+      const now = Date.now();
+      const local = localDeck(now);
+      const theirs = mergeDecks(readDeck(remote.deck), emptyDeck(), now);
+      const merged = mergeDecks(local, theirs, now);
+      const mergedJson = JSON.stringify(merged);
+      if(mergedJson !== JSON.stringify(local)) applyDeck(merged);
+      if(remote.status === 'ok' && mergedJson === JSON.stringify(theirs)){
+        finishSync(remote.version, startedAt);         // the server already has all of it
+        return;
+      }
+      const res = await rpc('put_deck', {code, deck: merged, expected_version: remote.version});
+      if(res && res.status === 'ok'){ finishSync(res.version, startedAt); return; }
+      if(!res || res.status !== 'conflict') throw new Error('unexpected response');
+      remote = res;                                     // another device wrote first
+    }
+    throw Object.assign(new Error('still conflicting after 5 attempts'), {status: 409});
+  } catch(err){
+    syncFailed(err);
+  } finally {
+    syncRunning = false;
+    if(syncAgain){ syncAgain = false; syncNow(); }
+  }
+}
+
+function finishSync(version, startedAt){
+  sync.version = version;
+  sync.lastSynced = Date.now();
+  // Only clear the flag if nothing changed while the request was in flight.
+  if(changeCounter === startedAt) sync.dirty = false;
+  saveSyncState();
+  retryDelay = 0;
+  setSyncStatus('synced');
+  if(sync.dirty){
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(syncNow, SYNC_DEBOUNCE);
+  }
+}
+
+function syncFailed(err){
+  if(isTransient(err)){
+    setSyncStatus('offline');
+    retryDelay = retryDelay ? Math.min(retryDelay * 2, 120000) : 5000;
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(syncNow, retryDelay);
+  } else {
+    setSyncStatus('error');
+    console.warn('Sync failed:', err && err.message);
+  }
+}
+
+// The page may not come back (a closed tab, an app switch on a phone), so
+// push pending changes now with keepalive, which outlives the page. It only
+// writes if the server hasn't moved on since our last sync; otherwise it is
+// refused, the changes stay flagged, and the next visit merges them.
+function flushOnHide(){
+  if(!sync.code || !sync.dirty || syncRunning || !sync.version) return;
+  const body = {code: sync.code, deck: localDeck(Date.now()), expected_version: sync.version};
+  // Browsers cap keepalive bodies at 64 kB; a bigger deck syncs next visit.
+  if(JSON.stringify(body).length > 60000) return;
+  clearTimeout(syncTimer);
+  syncRunning = true;
+  const startedAt = changeCounter;
+  rpc('put_deck', body, true).then(res=>{
+    if(res && res.status === 'ok') finishSync(res.version, startedAt);
+  }).catch(()=>{}).finally(()=>{
+    syncRunning = false;
+    if(syncAgain){ syncAgain = false; syncNow(); }
+  });
+}
+
+async function turnOnSync(){
+  if(syncBusy || sync.code) return;
+  syncBusy = true; syncMsg = ''; renderSyncPanel();
+  const startedAt = changeCounter;
+  try{
+    // A fresh code is all but certain to be unused. If one is taken, the
+    // server answers with a conflict and we draw another.
+    for(let attempt = 0; attempt < 3; attempt++){
+      const code = randomCrockford(10);
+      const res = await rpc('put_deck', {code, deck: localDeck(Date.now()), expected_version: 0});
+      if(res && res.status === 'ok'){
+        sync = {code, version: res.version, lastSynced: Date.now(), dirty: changeCounter !== startedAt};
+        saveSyncState();
+        setSyncStatus('synced');
+        if(sync.dirty) syncTimer = setTimeout(syncNow, SYNC_DEBOUNCE);
+        return;
+      }
+    }
+    throw new Error('no free code');
+  } catch(err){
+    syncMsg = isTransient(err) ? t('syncUnreachable') : t('syncRejected');
+  } finally {
+    syncBusy = false;
+    renderSyncPanel();
+  }
+}
+
+async function connectWithCode(input){
+  if(syncBusy || sync.code) return;
+  const code = normalizeCode(input);
+  if(!code){ syncMsg = t('syncBadCode'); renderSyncPanel(); return; }
+  syncBusy = true; syncMsg = ''; renderSyncPanel();
+  try{
+    const res = await rpc('get_deck', {code});
+    // A mistyped code looks just like an unused one, so this only ever joins
+    // a deck that exists; it never starts one.
+    if(!res || res.status !== 'ok'){ syncMsg = t('syncNotFound'); return; }
+    sync = {code, version: 0, lastSynced: 0, dirty: true};
+    saveSyncState();
+    syncUi = 'idle';
+    syncCodeDraft = '';
+  } catch(err){
+    syncMsg = isTransient(err) ? t('syncUnreachable') : t('syncRejected');
+    return;
+  } finally {
+    syncBusy = false;
+    renderSyncPanel();
+  }
+  syncNow();
+}
+
+function stopSync(){
+  if(!confirm(t('syncStopConfirm'))) return;
+  clearTimeout(syncTimer);
+  clearTimeout(retryTimer);
+  sync = {code: null, version: 0, lastSynced: 0, dirty: false};
+  saveSyncState();
+  syncMsg = '';
+  setSyncStatus('off');
+  renderSyncPanel();
+}
+
+function setSyncStatus(status){
+  syncStatus = status;
+  updateSyncStatusLine();
+}
+
+function syncAgo(ts){
+  const s = Math.max(0, Math.round((Date.now() - ts) / 1000));
+  if(s < 60) return t('justNow');
+  const m = Math.floor(s / 60);
+  if(m < 60) return t('timeAgo', {n: count('minute', m)});
+  const h = Math.floor(m / 60);
+  if(h < 24) return t('timeAgo', {n: count('hour', h)});
+  return t('timeAgo', {n: count('day', Math.floor(h / 24))});
+}
+
+function syncStatusText(){
+  if(syncStatus === 'syncing') return t('syncStatusSyncing');
+  const last = sync.lastSynced ? syncAgo(sync.lastSynced) : '';
+  if(syncStatus === 'synced') return t('syncStatusSynced') + (last ? ' · ' + last : '');
+  const label = syncStatus === 'error' ? t('syncStatusError') : t('syncStatusOffline');
+  return label + (last ? ' · ' + t('syncLastSynced', {when: last}) : '');
+}
+
+// Updates only the status line, so a ticking "2 minutes ago" never disturbs
+// a code being typed.
+function updateSyncStatusLine(){
+  const el = document.getElementById('syncStatusLine');
+  if(!el) return;
+  el.className = 'sync-status st-' + syncStatus;
+  el.querySelector('.sync-status-text').textContent = syncStatusText();
+}
+
+function renderSyncPanel(){
+  const box = document.getElementById('syncBox');
+  if(!box) return;
+  const dis = syncBusy ? ' disabled' : '';
+  let html = '<div class="sync-head"><span class="sync-title">' + t('syncTitle') + '</span>' +
+    (sync.code ? '<span class="sync-status" id="syncStatusLine"><span class="sync-dot" aria-hidden="true"></span><span class="sync-status-text"></span></span>' : '') +
+    '</div>';
+  if(sync.code){
+    html +=
+      '<div class="sync-label">' + t('syncCodeLabel') + '</div>' +
+      '<div class="sync-code-row">' +
+        '<code class="sync-code" id="syncCode">' + formatCode(sync.code) + '</code>' +
+        '<button class="btn-secondary" id="syncCopyBtn">' + t('syncCopy') + '</button>' +
+      '</div>' +
+      '<p class="sync-warn">' + t('syncWarning') + '</p>' +
+      '<button class="btn-muted" id="syncStopBtn">' + t('syncStop') + '</button>';
+  } else if(syncUi === 'enter'){
+    html +=
+      '<p class="sync-text">' + t('syncEnterHelp') + '</p>' +
+      '<div class="sync-enter">' +
+        '<input class="sync-input" id="syncCodeInput" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="13" placeholder="XXXXX-XXXXX" aria-label="' + t('syncCodeLabel') + '">' +
+        '<button class="btn-parse" id="syncConnectBtn"' + dis + '>' + t('syncConnect') + '</button>' +
+        '<button class="btn-muted" id="syncCancelBtn"' + dis + '>' + t('syncCancel') + '</button>' +
+      '</div>';
+  } else {
+    html +=
+      '<p class="sync-text">' + t('syncIntro') + '</p>' +
+      '<div class="backup-row">' +
+        '<button class="btn-secondary" id="syncOnBtn"' + dis + '>' + t('syncTurnOn') + '</button>' +
+        '<button class="btn-secondary" id="syncHaveBtn"' + dis + '>' + t('syncHaveCode') + '</button>' +
+      '</div>';
+  }
+  html += '<div class="sync-msg" id="syncMsg" role="status" aria-live="polite">' +
+    escapeHtml(syncBusy ? t('syncStatusSyncing') : syncMsg) + '</div>';
+  box.innerHTML = html;
+
+  const on = (id, fn) => { const el = document.getElementById(id); if(el) el.addEventListener('click', fn); };
+  on('syncOnBtn', turnOnSync);
+  on('syncHaveBtn', ()=>{ syncUi = 'enter'; syncMsg = ''; renderSyncPanel(); document.getElementById('syncCodeInput').focus(); });
+  on('syncCancelBtn', ()=>{ syncUi = 'idle'; syncMsg = ''; syncCodeDraft = ''; renderSyncPanel(); });
+  on('syncConnectBtn', ()=> connectWithCode(syncCodeDraft));
+  on('syncStopBtn', stopSync);
+  on('syncCopyBtn', ()=>{
+    const btn = document.getElementById('syncCopyBtn');
+    const done = ()=>{
+      btn.textContent = t('syncCopied');
+      setTimeout(()=>{ if(btn.isConnected) btn.textContent = t('syncCopy'); }, 1600);
+    };
+    const select = ()=>{
+      const r = document.createRange();
+      r.selectNodeContents(document.getElementById('syncCode'));
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(formatCode(sync.code)).then(done, select);
+    } else select();
+  });
+  const input = document.getElementById('syncCodeInput');
+  if(input){
+    input.value = syncCodeDraft;
+    input.addEventListener('input', ()=>{ syncCodeDraft = input.value; });
+    input.addEventListener('keydown', e=>{ if(e.key === 'Enter') connectWithCode(syncCodeDraft); });
+  }
+  updateSyncStatusLine();
+}
+
+function startSync(){
+  syncStatus = sync.code ? 'syncing' : 'off';
+  renderSyncPanel();
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState === 'hidden') flushOnHide();
+    // Back after a while: pick up whatever other devices changed.
+    else if(sync.code && Date.now() - sync.lastSynced > 30000) syncNow();
+  });
+  window.addEventListener('online', ()=>{ if(sync.code) syncNow(); });
+  // Keeps "2 minutes ago" current while the stats panel is open.
+  setInterval(updateSyncStatusLine, 30000);
+  if(sync.code) syncNow();
+}
+
 function init(){
   loadAll();
   // A saved choice always wins; otherwise fall back to the browser's language.
@@ -2636,6 +3361,7 @@ function init(){
   renderStats();
   renderStatsPanel();
   renderCard(false);
+  startSync();
   if(cards.length === 0) showLanding();
 }
 

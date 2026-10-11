@@ -41,17 +41,27 @@ Answer **Good** and the word moves up a box, so you see it less often. Answer **
 - Day streak, reviews today / this week / all time, and mastered-word count
 - Export your deck and progress to a file, import it back on another device, or share decks with friends
 
+**Sync**
+- Optional sync between your phone and computer with a sync code — no account
+- Changes merge card by card, so studying on two devices doesn't overwrite either
+
 **Appearance**
 - Eight color themes
 - Custom background image, custom card color, or a photo on the cards
 
 ## Privacy
 
-Everything is stored in your own browser — your words never leave your device, and there is no account to create. The site uses [GoatCounter](https://www.goatcounter.com) for anonymous visit counts, which sets no cookies and collects no personal data.
+Your words are stored in your own browser and stay on your device unless you turn on sync. There is no account to create.
+
+**If you turn on sync**, your deck — words, translations, box progress and review counts — is stored in a [Supabase](https://supabase.com) database so your other devices can reach it. It is filed under a SHA-256 hash of your sync code; the code itself is never stored, and no account or personal details are attached. Anyone who has your code can read and change your synced deck, so keep it to yourself. Settings, themes and background images always stay on the device. Stopping sync keeps your words on that device, and the synced copy stays online for your other devices.
+
+The site uses [GoatCounter](https://www.goatcounter.com) for anonymous visit counts, which sets no cookies and collects no personal data.
 
 ## Running it yourself
 
 `index.html` is the entire app — no build step, no dependencies. Download it and open it in any browser, or fork this repo and enable GitHub Pages to host your own copy.
+
+Sync talks to this project's Supabase backend. To run your own, create a Supabase project, run [`supabase/schema.sql`](supabase/schema.sql) in its SQL editor (and optionally [`supabase/verify.sql`](supabase/verify.sql) to check it), then set `SUPABASE_URL` and `SUPABASE_KEY` in `index.html` to your project's URL and publishable key. [`.github/workflows/supabase-keepalive.yml`](.github/workflows/supabase-keepalive.yml) calls the API every three days so a free project isn't paused for inactivity.
 
 ## Feedback
 

@@ -1,0 +1,30 @@
+# Supabase pauses free projects after a week with no activity. This calls the
+# sync API every three days so the project stays awake. The publishable key is
+# public by design (it is also in index.html) and can only call the two sync
+# functions, so it needs no secret.
+name: Keep Supabase awake
+
+on:
+  schedule:
+    - cron: '17 6 */3 * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call get_deck with an unused code
+        env:
+          SUPABASE_URL: https://ijzmmucpyykrhnhijgvc.supabase.co
+          SUPABASE_KEY: sb_publishable_ycBKniW5lYW9b2CzuHSq_g_1iu_h-qW
+        run: |
+          response=$(curl -fsS --retry 3 --retry-delay 10 --max-time 30 \
+            -X POST "$SUPABASE_URL/rest/v1/rpc/get_deck" \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"code":"00000-00000"}')
+          echo "$response"
+          echo "$response" | grep -q '"status"'

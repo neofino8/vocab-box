@@ -1,12 +1,15 @@
-# Supabase pauses free projects after a week with no activity. This calls the
-# sync API every three days so the project stays awake. The publishable key is
+# Supabase pauses free projects for low activity, and wants a few database
+# requests a day to count a project as active. Pinging every three days was not
+# enough and the project was paused on 2026-10-19, so this now runs every six
+# hours. get_deck is a real query, not just an HTTP hit. The publishable key is
 # public by design (it is also in index.html) and can only call the two sync
 # functions, so it needs no secret.
 name: Keep Supabase awake
 
 on:
   schedule:
-    - cron: '17 6 */3 * *'
+    # Every 6 hours. Off-the-hour to dodge GitHub's top-of-hour scheduler load.
+    - cron: '17 */6 * * *'
   workflow_dispatch:
 
 permissions: {}

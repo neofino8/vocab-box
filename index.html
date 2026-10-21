@@ -524,6 +524,13 @@
     font-family:'IBM Plex Mono', monospace; font-size:22px; font-weight:500;
   }
   .stat-tile .v.hl{ color:var(--accent); }
+  .stats-head{
+    font-size:12px; font-weight:600; color:var(--soft); margin:0 0 8px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .stats-grid-all{ grid-template-columns:repeat(3, 1fr); gap:8px; }
+  .stats-grid-all .stat-tile{ padding:10px 6px; }
+  .stats-grid-all .stat-tile .v{ font-size:17px; }
   .stat-tile .k{
     font-size:10.5px; color:var(--soft); text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;
   }
@@ -836,6 +843,7 @@
   </div>
 
   <div class="stats-panel" id="statsPanel">
+    <div class="stats-head" id="stDeckName" dir="auto"></div>
     <div class="stats-grid">
       <div class="stat-tile"><div class="v hl" id="stStreak">0</div><div class="k" data-i18n="stStreak">day streak</div></div>
       <div class="stat-tile"><div class="v" id="stToday">0</div><div class="k" data-i18n="stToday">reviews today</div></div>
@@ -843,6 +851,17 @@
       <div class="stat-tile"><div class="v" id="stTotal">0</div><div class="k" data-i18n="stTotal">all time</div></div>
       <div class="stat-tile"><div class="v" id="stMastered">0</div><div class="k" data-i18n="stMastered">mastered (box 5)</div></div>
       <div class="stat-tile"><div class="v" id="stCards">0</div><div class="k" data-i18n="stCards">total cards</div></div>
+    </div>
+    <div id="stAll" hidden>
+      <div class="stats-head" data-i18n="stAllDecks">All decks</div>
+      <div class="stats-grid stats-grid-all">
+        <div class="stat-tile"><div class="v" id="stAllToday">0</div><div class="k" data-i18n="stToday">reviews today</div></div>
+        <div class="stat-tile"><div class="v" id="stAllWeek">0</div><div class="k" data-i18n="stWeek">this week</div></div>
+        <div class="stat-tile"><div class="v" id="stAllTotal">0</div><div class="k" data-i18n="stTotal">all time</div></div>
+        <div class="stat-tile"><div class="v" id="stAllMastered">0</div><div class="k" data-i18n="stMastered">mastered (box 5)</div></div>
+        <div class="stat-tile"><div class="v" id="stAllCards">0</div><div class="k" data-i18n="stCards">total cards</div></div>
+        <div class="stat-tile"><div class="v" id="stAllDeckCount">0</div><div class="k" data-i18n="stDecks">decks</div></div>
+      </div>
     </div>
     <div class="backup-row">
       <button class="btn-secondary" id="exportBtn" data-i18n="exportBtn">Export backup</button>
@@ -936,9 +955,18 @@ const CARD_IMAGE_KEY = 'vocab-box-card-image';
 const SYNC_KEY = 'vocab-box-sync';
 const DEVICE_KEY = 'vocab-box-device';
 const TOMBSTONE_KEY = 'vocab-box-tombstones';
+const DECKS_KEY = 'vocab-box-decks';
+const DECK_TOMBSTONE_KEY = 'vocab-box-deck-tombstones';
+const CURRENT_DECK_KEY = 'vocab-box-current-deck';
 const DAY = 86400000;
 const INTERVAL_DAYS = {1:1, 2:2, 3:4, 4:7, 5:14};
 const TOMBSTONE_TTL = 60 * DAY;
+// Cards from before decks existed, and older backups, belong to this deck. A
+// fixed id rather than a random one means every device migrates into the
+// same deck, so syncing never turns one IELTS deck into two.
+const DEFAULT_DECK = 'default';
+const DEFAULT_DECK_NAME = 'IELTS';
+const DECK_NAME_MAX = 40;
 
 // `soft` is the muted text colour. It is drawn on the theme's panel, the
 // lightest surface it sits on, so it must reach 4.5:1 against `panel`.
@@ -1015,6 +1043,7 @@ const I18N = {
 
       stStreak: 'day streak', stToday: 'reviews today', stWeek: 'this week',
       stTotal: 'all time', stMastered: 'mastered (box 5)', stCards: 'total cards',
+      stAllDecks: 'All decks', stDecks: 'decks',
       exportBtn: 'Export backup', importBtn: 'Import',
       backupDone: 'Backup downloaded.',
       backupBad: 'Could not read that file. Is it a Vocab Box backup?',
@@ -1077,6 +1106,7 @@ const I18N = {
 
       emptyTitle: 'Your box is empty',
       emptyBody: 'Add your own word list below, or start with a ready-made one.',
+      emptyBodyOwn: 'Add your own word list below.',
       sampleBtn: 'Try a sample deck (20 words)',
       allDoneTitle: 'All done for now',
       allDoneBody: 'Nothing left due today. Come back tomorrow, or keep going without affecting your boxes.',
@@ -1091,6 +1121,7 @@ const I18N = {
       lsNew: 'new', lsSeen: 'introduced', lsMastered: 'mastered',
       nothingToLearn: 'Nothing to learn yet',
       nothingToLearnBody: 'Add words below, or load the sample deck from Review.',
+      nothingToLearnOwn: 'Add words to this deck below.',
 
       chooseTranslation: 'Choose the correct translation',
       chooseWord: 'Choose the correct word',
@@ -1142,6 +1173,7 @@ const I18N = {
 
       stStreak: 'дней подряд', stToday: 'повторов сегодня', stWeek: 'за неделю',
       stTotal: 'за всё время', stMastered: 'выучено (ящик 5)', stCards: 'всего карточек',
+      stAllDecks: 'Все наборы', stDecks: 'всего наборов',
       exportBtn: 'Скачать копию', importBtn: 'Загрузить',
       backupDone: 'Резервная копия скачана.',
       backupBad: 'Не удалось прочитать файл. Это резервная копия Vocab Box?',
@@ -1204,6 +1236,7 @@ const I18N = {
 
       emptyTitle: 'Картотека пуста',
       emptyBody: 'Добавьте свой список ниже или начните с готового.',
+      emptyBodyOwn: 'Добавьте свой список ниже.',
       sampleBtn: 'Пробный набор (20 слов)',
       allDoneTitle: 'На сегодня всё',
       allDoneBody: 'Больше ничего не запланировано. Возвращайтесь завтра или продолжайте — на ящики это не повлияет.',
@@ -1218,6 +1251,7 @@ const I18N = {
       lsNew: 'новых', lsSeen: 'начато', lsMastered: 'выучено',
       nothingToLearn: 'Пока нечего учить',
       nothingToLearnBody: 'Добавьте слова ниже или загрузите пробный набор из «Повтора».',
+      nothingToLearnOwn: 'Добавьте слова в этот набор ниже.',
 
       chooseTranslation: 'Выберите правильный перевод',
       chooseWord: 'Выберите правильное слово',
@@ -1271,6 +1305,7 @@ const I18N = {
 
       stStreak: 'kun ketma-ket', stToday: 'bugungi takrorlar', stWeek: 'shu hafta',
       stTotal: 'jami', stMastered: 'oʻzlashtirilgan (5-quti)', stCards: 'jami kartochka',
+      stAllDecks: 'Barcha toʻplamlar', stDecks: 'jami toʻplam',
       exportBtn: 'Zaxira nusxa', importBtn: 'Yuklash',
       backupDone: 'Zaxira nusxa yuklab olindi.',
       backupBad: 'Faylni oʻqib boʻlmadi. Bu Vocab Box zaxira nusxasimi?',
@@ -1333,6 +1368,7 @@ const I18N = {
 
       emptyTitle: 'Quti boʻsh',
       emptyBody: 'Quyida oʻz roʻyxatingizni qoʻshing yoki tayyorisidan boshlang.',
+      emptyBodyOwn: 'Quyida oʻz roʻyxatingizni qoʻshing.',
       sampleBtn: 'Sinov toʻplami (20 ta soʻz)',
       allDoneTitle: 'Bugunga tamom',
       allDoneBody: 'Bugunga boshqa hech nima qolmadi. Ertaga qayting yoki davom eting — bu qutilarga taʼsir qilmaydi.',
@@ -1347,6 +1383,7 @@ const I18N = {
       lsNew: 'yangi', lsSeen: 'boshlangan', lsMastered: 'oʻzlashtirilgan',
       nothingToLearn: 'Hozircha oʻrganadigan narsa yoʻq',
       nothingToLearnBody: 'Quyida soʻz qoʻshing yoki «Takror»dan sinov toʻplamini yuklang.',
+      nothingToLearnOwn: 'Quyida bu toʻplamga soʻz qoʻshing.',
 
       chooseTranslation: 'Toʻgʻri tarjimani tanlang',
       chooseWord: 'Toʻgʻri soʻzni tanlang',
@@ -1453,6 +1490,11 @@ function relocalize(){
 
 let settings = { direction:'normal', typing:false, voice:'en-US', learnView:'cards', lang:null, sharedChangedAt:0 };
 let activity = {};
+// Every card belongs to a deck by id. The id, never the name, identifies a
+// deck across devices, so a rename stays a rename.
+let decks = [];
+let deckTombstones = [];
+let currentDeck = DEFAULT_DECK;
 // Sync state, declared early because loading and saving use it. The sync
 // engine itself is in the Sync section near the end.
 let tombstones = [];
@@ -1477,12 +1519,13 @@ function loadAll(){
     }
     cards = raw ? JSON.parse(raw) : [];
     // Older saves (and some pasted lists) carry padded words, which broke
-    // prefix matching in the filter. Repair once, and only write if it helped.
+    // prefix matching in the filter, and words are kept in NFC so the same
+    // word always compares equal. Repair once, and only write if it helped.
     let repaired = false;
     cards.forEach(c => {
       if(c.seen === undefined) c.seen = true;
-      const word = String(c.word == null ? '' : c.word).trim();
-      const translation = String(c.translation == null ? '' : c.translation).trim();
+      const word = String(c.word == null ? '' : c.word).trim().normalize('NFC');
+      const translation = String(c.translation == null ? '' : c.translation).trim().normalize('NFC');
       if(word !== c.word || translation !== c.translation){
         c.word = word;
         c.translation = translation;
@@ -1494,19 +1537,34 @@ function loadAll(){
         c.changedAt = 0;
         repaired = true;
       }
+      // Cards from before decks all go to the default deck. Their edit times
+      // are kept, so progress merges exactly as it did before.
+      if(deckIdOr(c.deck) !== c.deck){
+        c.deck = DEFAULT_DECK;
+        repaired = true;
+      }
     });
     if(repaired) saveCards();
   }catch(e){ cards = []; }
   try{
     const tb = JSON.parse(localStorage.getItem(TOMBSTONE_KEY) || '[]');
     const cutoff = Date.now() - TOMBSTONE_TTL;
+    // Tombstones from before decks name only a word, in the default deck.
     tombstones = Array.isArray(tb) ? tb.filter(x => x && typeof x.word === 'string'
-      && typeof x.changedAt === 'number' && x.changedAt >= cutoff) : [];
+      && typeof x.changedAt === 'number' && x.changedAt >= cutoff)
+      .map(x => ({deck: deckIdOr(x.deck), word: normWord(x.word), changedAt: x.changedAt, deleted: true})) : [];
   }catch(e){ tombstones = []; }
   try{
     const s = localStorage.getItem(SETTINGS_KEY);
     if(s) settings = Object.assign(settings, JSON.parse(s));
   }catch(e){}
+  try{
+    const d = JSON.parse(localStorage.getItem(DECKS_KEY) || 'null');
+    decks = Array.isArray(d) ? d.map(readDeckEntry).filter(Boolean) : [];
+    const dt = JSON.parse(localStorage.getItem(DECK_TOMBSTONE_KEY) || '[]');
+    const cutoff = Date.now() - TOMBSTONE_TTL;
+    deckTombstones = Array.isArray(dt) ? dt.map(readDeckTombstone).filter(x => x && x.changedAt >= cutoff) : [];
+  }catch(e){ decks = []; deckTombstones = []; }
   try{
     const a = localStorage.getItem(ACTIVITY_KEY);
     if(a){
@@ -1537,6 +1595,9 @@ function loadAll(){
               shareSettings: s.shareSettings === true, adoptPending: !!s.adoptPending};
     }
   }catch(e){}
+  // The last deck used is remembered per device and never synced.
+  try{ currentDeck = localStorage.getItem(CURRENT_DECK_KEY) || DEFAULT_DECK; }catch(e){}
+  ensureDecks();
 }
 
 function saveCards(){
@@ -1555,10 +1616,23 @@ function saveTombstones(){
   try{ localStorage.setItem(TOMBSTONE_KEY, JSON.stringify(tombstones)); }catch(e){}
   noteLocalChange();
 }
+function saveDecks(){
+  try{
+    localStorage.setItem(DECKS_KEY, JSON.stringify(decks));
+    localStorage.setItem(DECK_TOMBSTONE_KEY, JSON.stringify(deckTombstones));
+  }catch(e){}
+  noteLocalChange();
+}
 
-// Cards are matched across devices by their word, ignoring case and padding.
-function cardKey(word){
-  return String(word == null ? '' : word).trim().toLowerCase();
+// Words compare ignoring case and padding, in Unicode NFC, so the same word
+// typed on one device and pasted on another is still the same word.
+function normWord(word){
+  return String(word == null ? '' : word).trim().normalize('NFC').toLowerCase();
+}
+// Cards are matched across devices by deck and word, so one word can be in
+// two decks. Deck ids never contain the separator.
+function cardKey(deck, word){
+  return deck + '\u0000' + normWord(word);
 }
 // Records a deliberate change to a card's box, translation or seen state.
 function touch(card){
@@ -1568,9 +1642,9 @@ function touch(card){
 // gets `base` (0 unless it came with one) and cannot override progress made
 // on another device. Re-adding a word deleted here is deliberate, though, so
 // it gets a real time that beats the deletion, and the tombstone goes.
-function addedStamp(word, base){
-  const k = cardKey(word);
-  const i = tombstones.findIndex(tb => tb.word === k);
+function addedStamp(deck, word, base){
+  const k = cardKey(deck, word);
+  const i = tombstones.findIndex(tb => cardKey(tb.deck, tb.word) === k);
   if(i === -1) return base || 0;
   tombstones.splice(i, 1);
   saveTombstones();
@@ -1578,21 +1652,106 @@ function addedStamp(word, base){
 }
 // A deletion is recorded as a tombstone so it spreads to other devices
 // instead of being brought back by them.
-function addTombstones(words){
+function addTombstones(list){
   const now = Date.now();
-  const byKey = new Map(tombstones.map(tb => [tb.word, tb]));
-  words.forEach(w=>{
-    const k = cardKey(w);
-    if(k) byKey.set(k, {word: k, changedAt: now, deleted: true});
+  const byKey = new Map(tombstones.map(tb => [cardKey(tb.deck, tb.word), tb]));
+  list.forEach(c=>{
+    const w = normWord(c.word);
+    if(w) byKey.set(cardKey(c.deck, w), {deck: c.deck, word: w, changedAt: now, deleted: true});
   });
   tombstones = [...byKey.values()];
   saveTombstones();
 }
-function clearTombstones(words){
-  const ks = new Set(words.map(cardKey));
+function clearTombstones(list){
+  const ks = new Set(list.map(c => cardKey(c.deck, c.word)));
   const before = tombstones.length;
-  tombstones = tombstones.filter(tb => !ks.has(tb.word));
+  tombstones = tombstones.filter(tb => !ks.has(cardKey(tb.deck, tb.word)));
   if(tombstones.length !== before) saveTombstones();
+}
+
+/* ---------- Decks ---------- */
+
+const DECK_ID_RE = /^(default|k[0-9A-Z]{10})$/;
+function deckIdOr(id){
+  return typeof id === 'string' && DECK_ID_RE.test(id) ? id : DEFAULT_DECK;
+}
+function newDeckId(){
+  return 'k' + randomCrockford(10);
+}
+// Collapses runs of spaces and caps the length in characters rather than
+// UTF-16 units, so a cut never splits an emoji or a surrogate pair.
+function cleanDeckName(name){
+  const s = String(name == null ? '' : name).normalize('NFC').replace(/\s+/g, ' ').trim();
+  return Array.from(s).slice(0, DECK_NAME_MAX).join('').trim();
+}
+// Names compare like words, so "german" and "German " are the same name.
+function deckNameKey(name){
+  return normWord(cleanDeckName(name));
+}
+// A BCP-47 language with an optional region, such as de-DE or zh-CN, in its
+// canonical case. Anything else falls back to American English.
+function cleanVoice(v){
+  const m = /^([a-zA-Z]{2,3})(?:[-_]([a-zA-Z]{2}|\d{3}))?$/.exec(String(v == null ? '' : v).trim());
+  return m ? m[1].toLowerCase() + (m[2] ? '-' + m[2].toUpperCase() : '') : 'en-US';
+}
+// Deck entries from storage, backups and other devices are checked field by
+// field, and come out with their keys in a fixed order for comparison.
+function readDeckEntry(x){
+  if(!x || typeof x !== 'object' || typeof x.id !== 'string' || !DECK_ID_RE.test(x.id)) return null;
+  const name = cleanDeckName(x.name);
+  if(!name) return null;
+  return {id: x.id, name, voice: cleanVoice(x.voice), changedAt: Number.isFinite(+x.changedAt) ? +x.changedAt : 0};
+}
+// A deleted deck keeps its name and voice, so it can come back as it was.
+function readDeckTombstone(x){
+  if(!x || typeof x !== 'object' || typeof x.id !== 'string' || !DECK_ID_RE.test(x.id)
+     || !Number.isFinite(+x.changedAt)) return null;
+  const tb = {id: x.id, name: cleanDeckName(x.name) || DEFAULT_DECK_NAME, voice: cleanVoice(x.voice),
+              changedAt: +x.changedAt, deleted: true};
+  if(typeof x.mergedInto === 'string' && DECK_ID_RE.test(x.mergedInto) && x.mergedInto !== x.id) tb.mergedInto = x.mergedInto;
+  return tb;
+}
+
+function deckById(id){
+  return decks.find(d => d.id === id) || null;
+}
+function curDeck(){
+  return deckById(currentDeck) || decks[0];
+}
+function deckCards(){
+  return cards.filter(c => c.deck === currentDeck);
+}
+// The sample words are English, so they are offered only in English decks.
+function isEnglishDeck(){
+  return /^en(-|$)/.test(curDeck().voice);
+}
+
+// There is always a deck to show. On the first run with decks this creates
+// the default deck for the existing words, named IELTS, with the voice this
+// device was using; edit time 0 lets any real rename win once decks sync.
+function ensureDecks(){
+  if(!deckById(DEFAULT_DECK) && (!decks.length || cards.some(c => c.deck === DEFAULT_DECK))){
+    decks.push({id: DEFAULT_DECK, name: DEFAULT_DECK_NAME, voice: cleanVoice(settings.voice), changedAt: 0});
+    saveDecks();
+  }
+  if(!deckById(currentDeck)) currentDeck = decks[0].id;
+}
+
+// The local deck that an imported deck's words go to: the same deck by id,
+// else one with the same name, else the imported deck itself, added here.
+// With no deck (an older backup) it is the default deck, recreated if it was
+// deleted.
+function adoptDeck(d){
+  const want = d || {id: DEFAULT_DECK, name: DEFAULT_DECK_NAME, voice: cleanVoice(settings.voice)};
+  if(deckById(want.id)) return want.id;
+  const k = deckNameKey(want.name);
+  const same = decks.find(x => deckNameKey(x.name) === k);
+  if(same) return same.id;
+  // Importing is deliberate, so it beats an earlier deletion of this deck.
+  deckTombstones = deckTombstones.filter(tb => tb.id !== want.id);
+  decks.push({id: want.id, name: cleanDeckName(want.name), voice: cleanVoice(want.voice), changedAt: Date.now()});
+  saveDecks();
+  return want.id;
 }
 
 function todayKey(offsetDays){
@@ -1600,18 +1759,27 @@ function todayKey(offsetDays){
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 
-function logReview(){
+// Counts are kept per device and deck, as "device:deck". A device only ever
+// raises its own counters, which is what lets sync merge them by maximum.
+function logReview(deck){
   const k = todayKey(0);
   const day = activity[k] || (activity[k] = {});
-  day[deviceId] = (day[deviceId] || 0) + 1;
+  const key = deviceId + ':' + deck;
+  day[key] = (day[key] || 0) + 1;
   saveActivity();
 }
+// Counts from before decks name only a device. They were all made in the one
+// deck there was, which is the default deck.
+function activityDeck(key){
+  const i = key.indexOf(':');
+  return i === -1 ? DEFAULT_DECK : key.slice(i + 1);
+}
 // Each device keeps its own count per day, so totals add up across devices
-// without counting anything twice.
-function dayTotal(k){
+// without counting anything twice. Without a deck it is the all-decks total.
+function dayTotal(k, deck){
   const day = activity[k];
   let n = 0;
-  if(day) for(const dev in day) n += day[dev];
+  if(day) for(const key in day) if(!deck || activityDeck(key) === deck) n += day[key];
   return n;
 }
 
@@ -1625,16 +1793,27 @@ function computeStreak(){
   return streak;
 }
 
+// The current deck's numbers, then every deck's together. The streak is
+// about the learner, not a deck, so it always counts every deck.
 function renderStatsPanel(){
-  const total = Object.keys(activity).reduce((n,k)=>n+dayTotal(k),0);
-  let week = 0;
-  for(let i=0;i<7;i++){ week += dayTotal(todayKey(i)); }
-  document.getElementById('stStreak').textContent = computeStreak();
-  document.getElementById('stToday').textContent = dayTotal(todayKey(0));
-  document.getElementById('stWeek').textContent = week;
-  document.getElementById('stTotal').textContent = total;
-  document.getElementById('stMastered').textContent = cards.filter(c=>c.box===5).length;
-  document.getElementById('stCards').textContent = cards.length;
+  const allTime = deck => Object.keys(activity).reduce((n,k)=>n+dayTotal(k, deck),0);
+  const week = deck => { let n = 0; for(let i=0;i<7;i++) n += dayTotal(todayKey(i), deck); return n; };
+  const set = (id, v) => { document.getElementById(id).textContent = v; };
+  const mine = deckCards();
+  set('stDeckName', curDeck().name);
+  set('stStreak', computeStreak());
+  set('stToday', dayTotal(todayKey(0), currentDeck));
+  set('stWeek', week(currentDeck));
+  set('stTotal', allTime(currentDeck));
+  set('stMastered', mine.filter(c=>c.box===5).length);
+  set('stCards', mine.length);
+  document.getElementById('stAll').hidden = decks.length < 2;
+  set('stAllToday', dayTotal(todayKey(0)));
+  set('stAllWeek', week());
+  set('stAllTotal', allTime());
+  set('stAllMastered', cards.filter(c=>c.box===5).length);
+  set('stAllCards', cards.length);
+  set('stAllDeckCount', decks.length);
   updateSyncStatusLine();
 }
 
@@ -1821,9 +2000,9 @@ function speak(text, btn){
 
 function exportBackup(){
   const data = {
-    app:'vocab-box', version:1,
+    app:'vocab-box', version:2,
     exportedAt:new Date().toISOString(),
-    cards, activity
+    decks, cards, activity
   };
   // The code is the only way back to a synced deck, so a backup keeps it.
   if(sync.code) data.syncCode = formatCode(sync.code);
@@ -1848,26 +2027,38 @@ function importBackup(file){
     try{
       const data = JSON.parse(e.target.result);
       if(!data || !Array.isArray(data.cards)) throw new Error('bad format');
+      // The backup's decks are matched to this device's by id, then by name.
+      // Cards with no deck, from older backups, go to the default deck.
+      const deckFor = new Map();
+      if(Array.isArray(data.decks)) data.decks.map(readDeckEntry).filter(Boolean).forEach(d=>{
+        deckFor.set(d.id, adoptDeck(d));
+      });
       let added = 0, updated = 0;
       data.cards.forEach(imp=>{
-        if(!imp.word || !imp.translation) return;
-        const existing = cards.find(c => c.word.toLowerCase() === imp.word.toLowerCase());
+        if(!imp || typeof imp.word !== 'string' || typeof imp.translation !== 'string') return;
+        const word = imp.word.trim().normalize('NFC');
+        const translation = imp.translation.trim().normalize('NFC');
+        if(!word || !translation) return;
+        const deck = deckFor.get(imp.deck) || adoptDeck(null);
+        const box = Math.min(Math.max(Math.round(+imp.box) || 1, 1), 5);
+        const existing = cards.find(c => c.deck === deck && normWord(c.word) === normWord(word));
         if(existing){
-          if((imp.box||1) > existing.box){
-            existing.box = imp.box;
+          if(box > existing.box){
+            existing.box = box;
             existing.due = imp.due || Date.now();
             touch(existing);
             updated++;
           }
         } else {
           cards.push({
-            id: imp.id || (Date.now() + '-' + Math.random().toString(36).slice(2,8)),
-            word: imp.word,
-            translation: imp.translation,
-            box: Math.min(Math.max(imp.box||1,1),5),
+            id: imp.id && !cards.some(c => c.id === imp.id) ? imp.id : (Date.now() + '-' + Math.random().toString(36).slice(2,8)),
+            deck,
+            word,
+            translation,
+            box,
             seen: imp.seen !== undefined ? imp.seen : true,
             due: imp.due || Date.now(),
-            changedAt: addedStamp(imp.word, typeof imp.changedAt === 'number' ? imp.changedAt : 0)
+            changedAt: addedStamp(deck, word, typeof imp.changedAt === 'number' ? imp.changedAt : 0)
           });
           added++;
         }
@@ -1888,9 +2079,11 @@ function importBackup(file){
         saveActivity();
       }
       saveCards();
+      ensureDecks();
       buildQueue();
       renderStats();
       renderStatsPanel();
+      renderWordList();
       current = null;
       practiceMode = false;
       renderCard(false);
@@ -1934,10 +2127,10 @@ function parseBulk(text){
     if(!line.trim()) return;
     const m = parseLine(line);
     if(!m){ unparsed++; return; }
-    const word = m[1].trim();
-    const translation = m[2].trim();
+    const word = m[1].trim().normalize('NFC');
+    const translation = m[2].trim().normalize('NFC');
     if(!word || !translation){ unparsed++; return; }
-    const key = word.toLowerCase();
+    const key = normWord(word);
 
     if(seenThisPaste[key]){
       dupInList.push(word);
@@ -1945,9 +2138,9 @@ function parseBulk(text){
     }
     seenThisPaste[key] = true;
 
-    const existing = cards.find(c => c.word.toLowerCase() === key);
+    const existing = cards.find(c => c.deck === currentDeck && normWord(c.word) === key);
     if(existing){
-      if(existing.translation.toLowerCase() === translation.toLowerCase()){
+      if(normWord(existing.translation) === normWord(translation)){
         dupSame.push(word);
       } else {
         existing.translation = translation;
@@ -1957,11 +2150,12 @@ function parseBulk(text){
     } else {
       cards.push({
         id: Date.now() + '-' + Math.random().toString(36).slice(2,8),
+        deck: currentDeck,
         word, translation,
         box: 1,
         seen: false,
         due: Date.now(),
-        changedAt: addedStamp(word, 0)
+        changedAt: addedStamp(currentDeck, word, 0)
       });
       added++;
     }
@@ -1998,13 +2192,15 @@ const SAMPLE_DECKS = {
 };
 
 function loadSampleDeck(){
-  const deck = SAMPLE_DECKS[(I18N[lang] || I18N.en).sampleDeck] || SAMPLE_DECKS.ru;
-  deck.forEach(([word, translation])=>{
-    if(cards.find(c => c.word.toLowerCase() === word.toLowerCase())) return;
+  if(!isEnglishDeck()) return;
+  const sample = SAMPLE_DECKS[(I18N[lang] || I18N.en).sampleDeck] || SAMPLE_DECKS.ru;
+  sample.forEach(([word, translation])=>{
+    if(cards.find(c => c.deck === currentDeck && normWord(c.word) === normWord(word))) return;
     cards.push({
       id: Date.now() + '-' + Math.random().toString(36).slice(2,8),
+      deck: currentDeck,
       word, translation, box:1, seen:false, due: Date.now(),
-      changedAt: addedStamp(word, 0)
+      changedAt: addedStamp(currentDeck, word, 0)
     });
   });
   saveCards();
@@ -2038,7 +2234,7 @@ function deleteWord(id){
   if(!card) return;
   lastDeleted = [card];
   cards = cards.filter(c => c.id !== id);
-  addTombstones([card.word]);
+  addTombstones([card]);
   queue = queue.filter(c => c.id !== id);
   if(current && current.id === id){
     current = null;
@@ -2052,12 +2248,13 @@ function deleteWord(id){
 }
 
 function deleteAllWords(){
-  if(cards.length === 0) return;
-  const n = cards.length;
+  const mine = deckCards();
+  if(mine.length === 0) return;
+  const n = mine.length;
   if(!confirm(t('confirmDeleteAll', {n: count('word', n)}))) return;
-  lastDeleted = cards.slice();
-  cards = [];
-  addTombstones(lastDeleted.map(c => c.word));
+  lastDeleted = mine;
+  cards = cards.filter(c => c.deck !== currentDeck);
+  addTombstones(lastDeleted);
   queue = [];
   current = null;
   practiceMode = false;
@@ -2086,7 +2283,7 @@ function undoDelete(){
   // Restoring is a fresh edit, so it beats the tombstone even if the deletion
   // has already reached other devices.
   lastDeleted.forEach(touch);
-  clearTombstones(lastDeleted.map(c => c.word));
+  clearTombstones(lastDeleted);
   cards = cards.concat(lastDeleted);
   lastDeleted = null;
   clearTimeout(undoTimer);
@@ -2102,7 +2299,7 @@ function undoDelete(){
 // Translations are separated lists like "достоинство, заслуга; заслужить", so a
 // prefix match means any one of those words starts with the query.
 function translationWords(translation){
-  return translation.toLowerCase().split(/[\s,;\/()]+/).filter(Boolean);
+  return normWord(translation).split(/[\s,;\/()]+/).filter(Boolean);
 }
 
 function rankWords(pool, filter){
@@ -2110,8 +2307,8 @@ function rankWords(pool, filter){
   if(!filter) return ordered;
   const starts = [], within = [], transStarts = [], transWithin = [];
   ordered.forEach(c=>{
-    const word = c.word.trim().toLowerCase();
-    const translation = c.translation.toLowerCase();
+    const word = normWord(c.word);
+    const translation = normWord(c.translation);
     if(word.startsWith(filter)) starts.push(c);
     else if(word.includes(filter)) within.push(c);
     else if(translationWords(c.translation).some(t => t.startsWith(filter))) transStarts.push(c);
@@ -2122,9 +2319,10 @@ function rankWords(pool, filter){
 
 function renderWordList(){
   const wrap = document.getElementById('wordList');
-  const filter = (document.getElementById('wordFilter').value || '').trim().toLowerCase();
+  const filter = normWord(document.getElementById('wordFilter').value);
   const title = document.getElementById('wordListTitle');
-  const pool = boxFilter ? cards.filter(c => c.box === boxFilter) : cards;
+  const mine = deckCards();
+  const pool = boxFilter ? mine.filter(c => c.box === boxFilter) : mine;
   const shown = rankWords(pool, filter);
   const shownCount = filter ? shown.length : pool.length;
   if(boxFilter){
@@ -2161,7 +2359,7 @@ function renderWordList(){
 
 function dueCards(){
   const now = Date.now();
-  return cards.filter(c => c.due <= now);
+  return deckCards().filter(c => c.due <= now);
 }
 
 function buildQueue(){
@@ -2170,7 +2368,7 @@ function buildQueue(){
 }
 
 function startPractice(){
-  queue = cards.slice().sort(()=>Math.random()-0.5);
+  queue = deckCards().sort(()=>Math.random()-0.5);
   practiceMode = true;
   current = null;
   renderCard(true);
@@ -2187,7 +2385,8 @@ function openBox(i){
 
 function renderStats(){
   const counts = [0,0,0,0,0,0];
-  cards.forEach(c => counts[c.box]++);
+  const mine = deckCards();
+  mine.forEach(c => counts[c.box]++);
   const drawers = document.getElementById('drawers');
   drawers.innerHTML = '';
   for(let i=1;i<=5;i++){
@@ -2198,7 +2397,7 @@ function renderStats(){
     d.addEventListener('click', ()=>openBox(i));
     drawers.appendChild(d);
   }
-  document.getElementById('totalline').textContent = count('card', cards.length);
+  document.getElementById('totalline').textContent = count('card', mine.length);
   document.getElementById('dueline').textContent = t('dueToday', {n: dueCards().length});
 }
 
@@ -2206,11 +2405,11 @@ function frontText(c){ return settings.direction === 'normal' ? c.word : c.trans
 function backText(c){ return settings.direction === 'normal' ? c.translation : c.word; }
 
 function answerVariants(c){
-  return backText(c).split(/[,;\/]/).map(v=>v.trim().toLowerCase()).filter(Boolean);
+  return backText(c).split(/[,;\/]/).map(normWord).filter(Boolean);
 }
 
 function checkAnswer(input, c){
-  const val = input.trim().toLowerCase();
+  const val = normWord(input);
   if(!val) return false;
   return answerVariants(c).some(v => v === val);
 }
@@ -2238,25 +2437,28 @@ function setMode(m){
 }
 
 function buildLearnList(){
-  const unseen = cards.filter(c => !c.seen);
-  learnList = unseen.length ? unseen.concat(cards.filter(c => c.seen)) : cards.slice();
+  const pool = deckCards();
+  const unseen = pool.filter(c => !c.seen);
+  learnList = unseen.length ? unseen.concat(pool.filter(c => c.seen)) : pool;
   learnIdx = 0;
 }
 
 function learnStatsHtml(){
+  const pool = deckCards();
   return '<div class="learn-stats">' +
-    '<div class="learn-stat"><div class="v" id="lsNew">' + cards.filter(x=>!x.seen).length + '</div><div class="k">' + t('lsNew') + '</div></div>' +
-    '<div class="learn-stat"><div class="v" id="lsSeen">' + cards.filter(x=>x.seen).length + '</div><div class="k">' + t('lsSeen') + '</div></div>' +
-    '<div class="learn-stat"><div class="v" id="lsMastered">' + cards.filter(x=>x.box===5).length + '</div><div class="k">' + t('lsMastered') + '</div></div>' +
+    '<div class="learn-stat"><div class="v" id="lsNew">' + pool.filter(x=>!x.seen).length + '</div><div class="k">' + t('lsNew') + '</div></div>' +
+    '<div class="learn-stat"><div class="v" id="lsSeen">' + pool.filter(x=>x.seen).length + '</div><div class="k">' + t('lsSeen') + '</div></div>' +
+    '<div class="learn-stat"><div class="v" id="lsMastered">' + pool.filter(x=>x.box===5).length + '</div><div class="k">' + t('lsMastered') + '</div></div>' +
   '</div>';
 }
 
 function refreshLearnStats(){
   const n = document.getElementById('lsNew');
   if(!n) return;
-  n.textContent = cards.filter(x=>!x.seen).length;
-  document.getElementById('lsSeen').textContent = cards.filter(x=>x.seen).length;
-  document.getElementById('lsMastered').textContent = cards.filter(x=>x.box===5).length;
+  const pool = deckCards();
+  n.textContent = pool.filter(x=>!x.seen).length;
+  document.getElementById('lsSeen').textContent = pool.filter(x=>x.seen).length;
+  document.getElementById('lsMastered').textContent = pool.filter(x=>x.box===5).length;
 }
 
 function learnRow(c, i){
@@ -2303,10 +2505,10 @@ function renderLearnList(stage){
 function renderLearn(){
   const stage = document.getElementById('stage');
   stage.innerHTML = '';
-  if(cards.length === 0){
+  if(deckCards().length === 0){
     const n = document.createElement('div');
     n.className = 'stage-note';
-    n.innerHTML = '<div class="big">' + t('nothingToLearn') + '</div>' + t('nothingToLearnBody');
+    n.innerHTML = '<div class="big">' + t('nothingToLearn') + '</div>' + t(isEnglishDeck() ? 'nothingToLearnBody' : 'nothingToLearnOwn');
     stage.appendChild(n);
     return;
   }
@@ -2373,18 +2575,20 @@ function notEnough(stage, need, what){
   const n = document.createElement('div');
   n.className = 'stage-note';
   n.innerHTML = '<div class="big">' + t('needAtLeast', {n: count('word', need)}) + '</div>' +
-    t('needBody', {what: what, n: count('word', cards.length)}) +
-    (cards.length === 0 ? t('addMoreOrSample') : t('addMoreBelow'));
+    t('needBody', {what: what, n: count('word', deckCards().length)}) +
+    (deckCards().length === 0 && isEnglishDeck() ? t('addMoreOrSample') : t('addMoreBelow'));
   stage.appendChild(n);
 }
 
 /* ---------- Quiz ---------- */
 
 function newQuizQuestion(){
+  // Distractors come from the same deck, so they are in the same language.
+  const mine = deckCards();
   const due = dueCards();
-  const pool = due.length ? due : cards;
+  const pool = due.length ? due : mine;
   const card = pool[Math.floor(Math.random()*pool.length)];
-  const others = shuffle(cards.filter(c => c.id !== card.id)).slice(0,3);
+  const others = shuffle(mine.filter(c => c.id !== card.id)).slice(0,3);
   quiz = {
     card,
     options: shuffle([card].concat(others)),
@@ -2396,8 +2600,9 @@ function newQuizQuestion(){
 function renderQuiz(){
   const stage = document.getElementById('stage');
   stage.innerHTML = '';
-  if(cards.length < 4){ notEnough(stage, 4, t('modeQuiz')); return; }
-  if(quiz && !cards.find(c => c.id === quiz.card.id)) quiz = null;
+  const mine = deckCards();
+  if(mine.length < 4){ notEnough(stage, 4, t('modeQuiz')); return; }
+  if(quiz && !mine.find(c => c.id === quiz.card.id)) quiz = null;
   if(!quiz) newQuizQuestion();
 
   const wrap = document.createElement('div');
@@ -2459,7 +2664,7 @@ function answerQuiz(pickedId){
   }
   touch(card);
   saveCards();
-  logReview();
+  logReview(card.deck);
   renderStats();
   renderStatsPanel();
   renderQuiz();
@@ -2498,7 +2703,8 @@ function startMatch(){
 }
 
 function dealMatch(){
-  const picks = shuffle(cards).slice(0, Math.min(MATCH_PAIRS, cards.length));
+  const mine = deckCards();
+  const picks = shuffle(mine).slice(0, Math.min(MATCH_PAIRS, mine.length));
   match.left = shuffle(picks).map(c=>({id:c.id, text:c.word, done:false}));
   match.right = shuffle(picks).map(c=>({id:c.id, text:c.translation, done:false}));
   match.picked = null;
@@ -2507,7 +2713,7 @@ function dealMatch(){
 function renderMatch(){
   const stage = document.getElementById('stage');
   stage.innerHTML = '';
-  if(cards.length < MATCH_PAIRS){ notEnough(stage, MATCH_PAIRS, t('modeMatch')); return; }
+  if(deckCards().length < MATCH_PAIRS){ notEnough(stage, MATCH_PAIRS, t('modeMatch')); return; }
 
   const wrap = document.createElement('div');
   wrap.style.width = '100%';
@@ -2604,9 +2810,11 @@ function renderCard(animateIn){
       practiceMode = false;
       const empty = document.createElement('div');
       empty.className = 'empty';
-      const total = cards.length;
+      const total = deckCards().length;
       if(total === 0){
-        empty.innerHTML = '<div class="big">' + t('emptyTitle') + '</div>' + t('emptyBody') + '<br><button class="btn-sample" id="sampleBtn">' + t('sampleBtn') + '</button>';
+        empty.innerHTML = '<div class="big">' + t('emptyTitle') + '</div>' + (isEnglishDeck()
+          ? t('emptyBody') + '<br><button class="btn-sample" id="sampleBtn">' + t('sampleBtn') + '</button>'
+          : t('emptyBodyOwn'));
       } else {
         empty.innerHTML = '<div class="big">' + t('allDoneTitle') + '</div>' + t('allDoneBody') + '<br><button class="btn-practice" id="practiceBtn">' + t('practiceAnyway') + '</button>';
       }
@@ -2731,7 +2939,7 @@ function rate(good){
     queue.splice(pos, 0, card);
   }
 
-  logReview();
+  logReview(card.deck);
   renderStats();
   renderStatsPanel();
 
@@ -2893,6 +3101,7 @@ function showLanding(){
   document.getElementById('themePanel').classList.remove('open');
   document.getElementById('statsPanel').classList.remove('open');
   resetLandingJoin();
+  document.getElementById('landingSample').style.display = isEnglishDeck() ? '' : 'none';
   document.body.classList.add('landing-on');
   window.scrollTo(0, 0);
 }
@@ -3035,8 +3244,9 @@ function formatCode(code){
 function syncCard(c){
   const box = Math.round(+c.box);
   return {
-    word: String(c.word).trim(),
-    translation: String(c.translation).trim(),
+    deck: deckIdOr(c.deck),
+    word: String(c.word).trim().normalize('NFC'),
+    translation: String(c.translation).trim().normalize('NFC'),
     box: Number.isFinite(box) ? Math.min(Math.max(box, 1), 5) : 1,
     seen: !!c.seen,
     due: Number.isFinite(+c.due) ? +c.due : 0,
@@ -3054,8 +3264,8 @@ function readDeck(d){
        && c.word.trim() && c.translation.trim()) out.cards.push(syncCard(c));
   });
   if(Array.isArray(d.tombstones)) d.tombstones.forEach(tb=>{
-    if(tb && typeof tb.word === 'string' && cardKey(tb.word) && Number.isFinite(+tb.changedAt)){
-      out.tombstones.push({word: cardKey(tb.word), changedAt: +tb.changedAt, deleted: true});
+    if(tb && typeof tb.word === 'string' && normWord(tb.word) && Number.isFinite(+tb.changedAt)){
+      out.tombstones.push({deck: deckIdOr(tb.deck), word: normWord(tb.word), changedAt: +tb.changedAt, deleted: true});
     }
   });
   out.settings = readSettingsUnit(d.settings);
@@ -3071,7 +3281,7 @@ function readDeck(d){
 }
 
 function cardSig(c){
-  return JSON.stringify([c.word, c.translation, c.box, c.seen, c.due, c.changedAt]);
+  return JSON.stringify([c.deck, c.word, c.translation, c.box, c.seen, c.due, c.changedAt]);
 }
 
 // True if entry `a` should replace entry `b` for the same word. This is a
@@ -3095,7 +3305,7 @@ function mergeDecks(a, b, now){
   const cutoff = now - TOMBSTONE_TTL;
   const best = new Map();
   const offer = e=>{
-    const k = cardKey(e.word);
+    const k = cardKey(e.deck, e.word);
     const cur = best.get(k);
     if(!cur || entryWins(e, cur)) best.set(k, e);
   };
@@ -3200,11 +3410,11 @@ function applySharedSettings(u){
 // in place, keeping their local ids and order, so an open Learn session,
 // review card or quiz keeps working; cards new to this device go at the end.
 function applyDeck(merged){
-  const win = new Map(merged.cards.map(c => [cardKey(c.word), c]));
+  const win = new Map(merged.cards.map(c => [cardKey(c.deck, c.word), c]));
   const kept = [];
   const gone = new Set();
   cards.forEach(c=>{
-    const k = cardKey(c.word), w = win.get(k);
+    const k = cardKey(c.deck, c.word), w = win.get(k);
     if(w){ Object.assign(c, w); kept.push(c); win.delete(k); }
     else gone.add(c);
   });
@@ -3215,7 +3425,7 @@ function applyDeck(merged){
   tombstones = merged.tombstones.map(tb => Object.assign({}, tb));
   activity = JSON.parse(JSON.stringify(merged.activity));
   applyingRemote = true;
-  try{ saveCards(); saveTombstones(); saveActivity(); }
+  try{ saveCards(); saveTombstones(); saveActivity(); ensureDecks(); }
   finally{ applyingRemote = false; }
   if(gone.size){
     queue = queue.filter(c => !gone.has(c));
@@ -3426,13 +3636,13 @@ async function connectWithCode(input){
   renderSyncPanel();
   const now = Date.now();
   const theirs = mergeDecks(readDeck(remote.deck), emptyDeck(), now);
-  const synced = new Set(theirs.cards.map(c => cardKey(c.word)));
-  const own = cards.filter(c => !synced.has(cardKey(c.word))).length;
+  const synced = new Set(theirs.cards.map(c => cardKey(c.deck, c.word)));
+  const own = cards.filter(c => !synced.has(cardKey(c.deck, c.word))).length;
   const choice = await askJoinChoices(own, theirs.cards.length);
   if(!choice || sync.code) return false;
   if(choice.words === 'replace'){
     // Nothing is discarded until a copy of it has been handed to the browser.
-    downloadJson({app: 'vocab-box', version: 1, exportedAt: new Date().toISOString(), cards: cards.slice(), activity},
+    downloadJson({app: 'vocab-box', version: 2, exportedAt: new Date().toISOString(), decks: decks.slice(), cards: cards.slice(), activity},
                  'vocab-box-before-replace-' + todayKey(0) + '.json');
   }
   // Replace keeps only this device's review counts, which are not words.

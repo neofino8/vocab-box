@@ -16,6 +16,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
   :root{
+    /* The web fonts cover Latin and Cyrillic. Chinese and Arabic fall back to
+       system fonts of the same kind (a Song face beside the serif, a sans
+       beside the sans), named for each platform, so they never land in an
+       unrelated default. Words carry their deck's lang, which also picks
+       Chinese rather than Japanese glyph forms. */
+    --font-sans:'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', 'Noto Sans CJK SC',
+      'Geeza Pro', 'Segoe UI', 'Noto Sans Arabic', Tahoma, sans-serif;
+    --font-serif:'Source Serif 4', 'Songti SC', 'STSong', 'Noto Serif SC', 'Noto Serif CJK SC', 'SimSun',
+      'Noto Naskh Arabic', 'Times New Roman', 'Geeza Pro', serif;
+    --font-mono:'IBM Plex Mono', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC',
+      'Geeza Pro', 'Segoe UI', 'Noto Sans Arabic', monospace;
     --paper:#EFEAD9;
     --paper-dark:#E4DEC9;
     --ink:#242420;
@@ -45,7 +56,7 @@
     background-position:center;
     background-attachment:fixed;
     color:var(--paper);
-    font-family:'Inter',sans-serif;
+    font-family:var(--font-sans);
     min-height:100vh;
     padding:32px 16px 64px;
     padding-top:calc(32px + env(safe-area-inset-top, 0px));
@@ -69,7 +80,7 @@
     margin-bottom:4px;
   }
   h1{
-    font-family:'Source Serif 4', serif;
+    font-family:var(--font-serif);
     font-weight:600;
     font-size:26px;
     margin:0;
@@ -108,22 +119,26 @@
   }
   .learn-counter{
     position:absolute; top:14px; right:16px;
-    font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--card-ink-soft);
+    font-family:var(--font-mono); font-size:11px; color:var(--card-ink-soft);
   }
   .learn-new, .learn-row-new{
     font-size:9.5px; letter-spacing:0.7px; text-transform:uppercase;
     background:var(--teal); color:#fff; padding:3px 9px; border-radius:20px;
   }
   .learn-new{ position:absolute; top:12px; left:16px; }
+  /* The speaker sits in the top strip, above the padding, so a long word or
+     a dense line of Chinese can't run under it. The counter moves aside. */
+  .learn-card .speak-btn{ top:4px; right:8px; }
+  .learn-card:has(.speak-btn:not([hidden])) .learn-counter{ right:48px; }
   .learn-row-new{
     display:inline-block; vertical-align:middle; margin-left:6px;
-    font-family:'Inter',sans-serif; font-weight:500;
+    font-family:var(--font-sans); font-weight:500;
   }
   .learn-word{
-    font-family:'Source Serif 4', serif; font-size:36px; font-weight:600; line-height:1.15;
+    font-family:var(--font-serif); font-size:36px; font-weight:600; line-height:1.15;
   }
   .learn-trans{
-    font-family:'Source Serif 4', serif; font-size:23px; color:var(--card-trans); margin-top:14px;
+    font-family:var(--font-serif); font-size:23px; color:var(--card-trans); margin-top:14px;
   }
   .learn-nav{
     display:flex; gap:8px; width:100%; margin-top:14px;
@@ -147,7 +162,7 @@
   .learn-stat{
     flex:1; background:var(--panel); border-radius:6px; padding:9px 6px; text-align:center;
   }
-  .learn-stat .v{ font-family:'IBM Plex Mono', monospace; font-size:15px; }
+  .learn-stat .v{ font-family:var(--font-mono); font-size:15px; }
   .learn-stat .k{
     font-size:9.5px; color:var(--soft); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px;
   }
@@ -164,12 +179,12 @@
     padding:4px 12px; margin-bottom:16px;
   }
   .quiz-prompt{
-    font-family:'Source Serif 4', serif; font-size:28px; font-weight:600;
+    font-family:var(--font-serif); font-size:28px; font-weight:600;
     margin-bottom:20px; text-align:center;
   }
   .quiz-options{ display:flex; flex-direction:column; gap:9px; width:100%; }
   .quiz-opt{
-    padding:14px 16px; text-align:left; font-size:15px;
+    padding:14px 16px; text-align:start; font-size:15px;
     background:var(--card-bg); color:var(--card-ink);
     border:1px solid transparent; border-radius:8px;
   }
@@ -192,7 +207,7 @@
     width:100%; margin-bottom:14px;
   }
   .match-timer{
-    font-family:'IBM Plex Mono', monospace; font-size:34px; font-weight:500;
+    font-family:var(--font-mono); font-size:34px; font-weight:500;
   }
   .match-timer.low{ color:var(--brick, #E0868E); }
   .match-score{ font-size:13px; color:var(--soft); text-align:right; }
@@ -213,20 +228,20 @@
   .match-tile.gone{ visibility:hidden; }
   .match-center{ text-align:center; width:100%; }
   .match-big{
-    font-family:'IBM Plex Mono', monospace; font-size:52px; font-weight:500; color:var(--accent);
+    font-family:var(--font-mono); font-size:52px; font-weight:500; color:var(--accent);
   }
   .match-sub{
-    font-family:'Source Serif 4', serif; font-size:22px; margin:6px 0 18px;
+    font-family:var(--font-serif); font-size:22px; margin:6px 0 18px;
   }
   .stage-note{
     text-align:center; padding:44px 20px; color:var(--soft);
     background:var(--panel); border-radius:8px; width:100%;
   }
-  .stage-note .big{ font-family:'Source Serif 4', serif; font-size:19px; color:var(--paper); margin-bottom:6px; }
+  .stage-note .big{ font-family:var(--font-serif); font-size:19px; color:var(--paper); margin-bottom:6px; }
   .chip{
     padding:7px 13px; border-radius:20px; font-size:12px;
     background:var(--panel); border:1px solid var(--line); color:var(--soft);
-    font-family:'Inter',sans-serif;
+    font-family:var(--font-sans);
   }
   .chip.on{ color:var(--accent); border-color:var(--accent); }
   .chip:hover{ filter:brightness(1.15); }
@@ -242,7 +257,7 @@
   }
   .drawer:hover{ filter:brightness(1.2); }
   .drawer .n{
-    font-family:'IBM Plex Mono', monospace; font-size:15px; font-weight:500;
+    font-family:var(--font-mono); font-size:15px; font-weight:500;
   }
   .drawer .l{
     font-size:10px; color:var(--soft); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px;
@@ -310,7 +325,7 @@
   .tab{
     position:absolute; top:-12px; left:20px;
     background:var(--navy); color:var(--paper);
-    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.6px;
+    font-family:var(--font-mono); font-size:11px; letter-spacing:0.6px;
     text-transform:uppercase;
     padding:4px 10px; border-radius:3px 3px 0 0;
   }
@@ -332,7 +347,7 @@
     display:flex; flex-direction:column; align-items:center; justify-content:center;
   }
   .word{
-    font-family:'Source Serif 4', serif;
+    font-family:var(--font-serif);
     font-size:30px;
     font-weight:600;
     line-height:1.25;
@@ -341,7 +356,7 @@
     width:36px; height:1px; background:var(--card-divider); margin:18px 0;
   }
   .translation{
-    font-family:'Source Serif 4', serif;
+    font-family:var(--font-serif);
     font-size:24px;
     color:var(--card-trans);
   }
@@ -359,7 +374,7 @@
   .type-input{
     flex:1; padding:12px; border-radius:6px; border:1px solid var(--card-divider);
     background:var(--card-input-bg); color:var(--card-ink);
-    font-family:'Inter',sans-serif; font-size:15px;
+    font-family:var(--font-sans); font-size:15px;
     min-width:0;
   }
   .type-input::placeholder{ color:var(--card-ink-soft); opacity:0.7; }
@@ -371,7 +386,7 @@
     display:flex; gap:10px; width:100%; margin-top:4px;
   }
   button{
-    font-family:'Inter',sans-serif;
+    font-family:var(--font-sans);
     border:none; border-radius:6px; cursor:pointer;
     font-size:14px; font-weight:500;
   }
@@ -388,7 +403,7 @@
     background:var(--panel); border-radius:8px; width:100%;
     transition:background-color .3s ease;
   }
-  .empty .big{ font-family:'Source Serif 4', serif; font-size:19px; color:var(--paper); margin-bottom:6px; }
+  .empty .big{ font-family:var(--font-serif); font-size:19px; color:var(--paper); margin-bottom:6px; }
   .btn-practice{
     margin-top:16px; padding:11px 22px;
     background:transparent; border:1px solid var(--accent); color:var(--accent);
@@ -444,7 +459,7 @@
   .deck-input, .deck-select{
     width:100%; background:rgba(0,0,0,0.28); color:var(--paper);
     border:1px solid var(--line); border-radius:6px; padding:8px 10px;
-    font-family:'Inter',sans-serif; font-size:14px;
+    font-family:var(--font-sans); font-size:14px;
   }
   .deck-select option{ color:#111; }
   .deck-actions{ display:flex; gap:8px; }
@@ -458,7 +473,7 @@
   textarea{
     width:100%; min-height:120px; background:rgba(0,0,0,0.28); color:var(--paper);
     border:1px solid var(--line); border-radius:6px; padding:10px;
-    font-family:'IBM Plex Mono', monospace; font-size:12.5px; line-height:1.6;
+    font-family:var(--font-mono); font-size:12.5px; line-height:1.6;
     resize:vertical;
   }
   .add-actions{
@@ -483,7 +498,7 @@
   .word-filter{
     background:rgba(0,0,0,0.28); color:var(--paper);
     border:1px solid var(--line); border-radius:6px; padding:7px 10px;
-    font-family:'Inter',sans-serif; font-size:12.5px; width:150px;
+    font-family:var(--font-sans); font-size:12.5px; width:150px;
   }
   .word-list{
     margin-top:10px; max-height:260px; overflow-y:auto;
@@ -495,9 +510,14 @@
   }
   .word-row:last-child{ border-bottom:none; }
   .word-row .w{ font-weight:500; }
-  .word-row .t{ color:var(--soft); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .word-row .t{ color:var(--soft); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:left; }
+  .word-row .w{ max-width:60%; overflow-wrap:break-word; }
+  /* Each pasted line takes its own direction, so Arabic lines read right to
+     left among Latin ones. */
+  #bulkInput{ unicode-bidi:plaintext; }
+  .word, .translation, .learn-word, .learn-trans, .quiz-prompt{ max-width:100%; overflow-wrap:break-word; }
   .word-row .box-select{
-    font-family:'IBM Plex Mono', monospace; font-size:10px; color:var(--accent);
+    font-family:var(--font-mono); font-size:10px; color:var(--accent);
     text-transform:uppercase; letter-spacing:0.5px;
     background:rgba(0,0,0,0.25); border:1px solid var(--line); border-radius:5px;
     padding:4px 6px; flex-shrink:0; cursor:pointer;
@@ -569,12 +589,12 @@
     background:rgba(0,0,0,0.22); border-radius:8px; padding:14px 12px; text-align:center;
   }
   .stat-tile .v{
-    font-family:'IBM Plex Mono', monospace; font-size:22px; font-weight:500;
+    font-family:var(--font-mono); font-size:22px; font-weight:500;
   }
   .stat-tile .v.hl{ color:var(--accent); }
   .stats-head{
     font-size:12px; font-weight:600; color:var(--soft); margin:0 0 8px;
-    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:left;
   }
   .stats-grid-all{ grid-template-columns:repeat(3, 1fr); gap:8px; }
   .stats-grid-all .stat-tile{ padding:10px 6px; }
@@ -604,19 +624,19 @@
   body.landing-on .theme-panel{ display:none; }
   .about-link{
     background:transparent; border:none; color:var(--soft);
-    font-family:'Inter',sans-serif; font-size:12.5px;
+    font-family:var(--font-sans); font-size:12.5px;
     min-height:38px; padding:0 4px;
     display:flex; align-items:center;
     text-decoration:underline; text-underline-offset:2px;
   }
   .about-link:hover{ color:var(--paper); }
   .landing-title{
-    font-family:'Source Serif 4', serif; font-weight:600;
+    font-family:var(--font-serif); font-weight:600;
     font-size:36px; line-height:1.1; letter-spacing:0.2px;
     margin:6px 0 0; text-align:center;
   }
   .landing-tagline{
-    font-family:'Source Serif 4', serif; font-size:19px; line-height:1.35;
+    font-family:var(--font-serif); font-size:19px; line-height:1.35;
     color:var(--accent); margin:10px 0 0; text-align:center;
   }
   .landing-lede{
@@ -669,12 +689,12 @@
   }
   .learn-row:last-child{ border-bottom:none; }
   .learn-row-n{
-    font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--soft);
+    font-family:var(--font-mono); font-size:11px; color:var(--soft);
     min-width:20px; text-align:right; flex-shrink:0;
   }
   .learn-row-main{ flex:1; min-width:0; }
   .learn-row-word{
-    font-family:'Source Serif 4', serif; font-size:16px; font-weight:600;
+    font-family:var(--font-serif); font-size:16px; font-weight:600;
     line-height:1.3; overflow-wrap:anywhere;
   }
   .learn-row-trans{
@@ -723,7 +743,7 @@
   .lang-seg{
     position:relative; z-index:1;
     background:transparent; color:var(--soft);
-    font-family:'IBM Plex Mono', monospace; font-size:11.5px; font-weight:500;
+    font-family:var(--font-mono); font-size:11.5px; font-weight:500;
     letter-spacing:.7px; padding:0 7px; border-radius:16px;
   }
   .lang-seg:not(.on):hover{ color:var(--paper); }
@@ -769,7 +789,7 @@
   }
   .sync-code-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .sync-code{
-    font-family:'IBM Plex Mono', monospace; font-size:18px; font-weight:500; letter-spacing:1.5px;
+    font-family:var(--font-mono); font-size:18px; font-weight:500; letter-spacing:1.5px;
     color:var(--paper); background:rgba(0,0,0,0.22); padding:7px 12px; border-radius:6px;
     -webkit-user-select:all; user-select:all;
   }
@@ -780,7 +800,7 @@
     flex:1 1 150px; min-width:0;
     background:rgba(0,0,0,0.28); color:var(--paper);
     border:1px solid var(--line); border-radius:6px; padding:9px 10px;
-    font-family:'IBM Plex Mono', monospace; font-size:16px; letter-spacing:1px; text-transform:uppercase;
+    font-family:var(--font-mono); font-size:16px; letter-spacing:1px; text-transform:uppercase;
   }
   .sync-input::placeholder{ color:var(--soft); }
   .sync-msg{ font-size:12px; color:var(--accent); line-height:1.5; margin-top:8px; min-height:16px; }
@@ -804,7 +824,7 @@
     background:var(--panel); border:1px solid var(--line); border-radius:12px;
     padding:20px 18px 18px; color:var(--paper); box-shadow:0 18px 50px rgba(0,0,0,0.45);
   }
-  .join-title{ font-family:'Source Serif 4', serif; font-weight:600; font-size:21px; margin:0; }
+  .join-title{ font-family:var(--font-serif); font-weight:600; font-size:21px; margin:0; }
   .join-sub{ font-size:12.5px; color:var(--soft); line-height:1.5; margin:6px 0 16px; }
   .join-group{ border:none; margin:0 0 6px; padding:0; min-width:0; }
   .join-group legend{
@@ -857,7 +877,7 @@
       <svg class="deck-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
   </div>
-  <div class="deck-notice" id="deckNotice" role="status" dir="auto" hidden></div>
+  <div class="deck-notice" id="deckNotice" role="status" hidden></div>
   <div class="deck-panel" id="deckPanel">
     <div id="deckPanelBody"></div>
     <div class="undo-row" id="deckUndoRow" style="display:none;"></div>
@@ -962,7 +982,7 @@
   <button class="toggle-add anim-4" id="toggleAdd" data-i18n="toggleAdd">+ Add / manage words</button>
   <div class="add-panel" id="addPanel">
     <p><span data-i18n="addHelp">Paste your list, one per line: word, dash, translation. Numbers are optional.</span><br><span data-i18n="addExample">Example — reside — проживать</span></p>
-    <textarea id="bulkInput" data-i18n-ph="bulkPh" placeholder="reside — проживать
+    <textarea id="bulkInput" dir="auto" data-i18n-ph="bulkPh" placeholder="reside — проживать
 remote — отдалённый
 isolation — изоляция"></textarea>
     <div class="add-actions">
@@ -971,7 +991,7 @@ isolation — изоляция"></textarea>
     </div>
     <div class="word-list-head">
       <h3 id="wordListTitle">Your words (<span id="wordCount">0</span>)</h3>
-      <input class="word-filter" id="wordFilter" type="text" data-i18n-ph="filterPh" placeholder="Filter…">
+      <input class="word-filter" id="wordFilter" type="text" dir="auto" data-i18n-ph="filterPh" placeholder="Filter…">
     </div>
     <div class="undo-row" id="undoRow" style="display:none;"></div>
     <div class="word-list" id="wordList"></div>
@@ -981,7 +1001,7 @@ isolation — изоляция"></textarea>
 
 <div class="join-dialog" id="joinDialog" hidden>
   <div class="join-card" role="dialog" aria-modal="true" aria-labelledby="joinTitle">
-    <h2 class="join-title" id="joinTitle" data-i18n="joinTitle">Join your synced deck</h2>
+    <h2 class="join-title" id="joinTitle" data-i18n="joinTitle">Join your synced decks</h2>
     <p class="join-sub" id="joinSub"></p>
     <fieldset class="join-group" id="joinWords">
       <legend data-i18n="joinWordsLegend">Words</legend>
@@ -1129,21 +1149,21 @@ const I18N = {
       syncEnterHelp: 'Enter the code from your other device. The words here are kept and combined with the synced ones.',
       syncConnect: 'Connect', syncCancel: 'Cancel',
       syncCodeLabel: 'Your sync code', syncCopy: 'Copy', syncCopied: 'Copied',
-      syncWarning: 'Write this code down — it’s the only way to reach your synced deck. Anyone who has it can see and change your words.',
+      syncWarning: 'Write this code down — it’s the only way to reach your synced decks. Anyone who has it can see and change your words.',
       syncStop: 'Stop syncing',
       syncStopConfirm: 'Stop syncing on this device? Your words stay here, and the synced copy stays online for your other devices.',
       syncStatusSyncing: 'Syncing…', syncStatusSynced: 'Synced',
       syncStatusOffline: 'Offline — will retry', syncStatusError: 'Sync error',
       syncLastSynced: 'last synced {when}', justNow: 'just now', timeAgo: '{n} ago',
       syncBadCode: 'That doesn’t look like a sync code. It has 10 letters and digits, like 7KX2M-QP9RT.',
-      syncNotFound: 'No synced deck uses this code. Check it and try again.',
+      syncNotFound: 'No synced decks use this code. Check it and try again.',
       syncUnreachable: 'Couldn’t reach the sync server. Check your connection and try again.',
       syncRejected: 'The sync server turned this deck down — it may be over the size limit.',
       syncImportConfirm: 'This backup includes sync code {code}. Turn on sync with it on this device?',
-      joinTitle: 'Join your synced deck', joinSyncedCount: 'The synced deck has {n}.',
+      joinTitle: 'Join your synced decks', joinSyncedCount: 'The synced decks have {n}.',
       joinWordsLegend: 'Words',
       joinCombine: 'Combine', joinCombineHint: 'Keep the words on this device and add the synced ones.',
-      joinReplace: 'Replace', joinReplaceHint: 'Use only the synced deck. {n} on this device will be removed — a backup file downloads first.',
+      joinReplace: 'Replace', joinReplaceHint: 'Use only the synced decks. {n} on this device will be removed — a backup file downloads first.',
       joinReplaceConfirm: 'Remove {n} from this device? A backup file of them downloads first.',
       joinSettingsLegend: 'Appearance & settings',
       shareSettings: 'Use the same theme and settings on all devices',
@@ -1953,8 +1973,8 @@ function deleteDeck(id){
   const d = deckById(id);
   if(!d || decks.length < 2) return;
   const mine = cards.filter(c => c.deck === id);
-  const ask = mine.length ? t('confirmDeleteDeck', {name: d.name, n: count('word', mine.length)})
-                          : t('confirmDeleteDeckEmpty', {name: d.name});
+  const ask = mine.length ? t('confirmDeleteDeck', {name: isolate(d.name), n: count('word', mine.length)})
+                          : t('confirmDeleteDeckEmpty', {name: isolate(d.name)});
   if(!confirm(ask)) return;
   decks = decks.filter(x => x.id !== id);
   deckTombstones = deckTombstones.filter(tb => tb.id !== id)
@@ -1977,9 +1997,17 @@ const VOICE_LANGS = ['ar-SA', 'ar-EG', 'az-AZ', 'cs-CZ', 'da-DK', 'de-DE', 'el-G
   'uz-UZ', 'vi-VN', 'zh-CN', 'zh-TW'];
 
 // A language tag named in the interface's language, e.g. "German (Germany)".
+// Browsers' Uzbek data leaves some languages unnamed ("ar (Saudi Arabia)"),
+// so those fall back to their English name.
 function voiceLabel(tag){
-  try{ return new Intl.DisplayNames([langTag(lang)], {type: 'language'}).of(tag) || tag; }
-  catch(e){ return tag; }
+  const base = tag.split('-')[0];
+  for(const loc of [langTag(lang), 'en']){
+    try{
+      const name = new Intl.DisplayNames([loc], {type: 'language'}).of(tag);
+      if(name && name !== tag && name !== base && !name.startsWith(base + ' ')) return name;
+    }catch(e){}
+  }
+  return tag;
 }
 function voiceOptions(selected){
   const loc = langTag(lang);
@@ -2519,12 +2547,19 @@ function setBackupMsg(text){
   setTimeout(()=>{ if(el.textContent===text) el.textContent=''; }, 5000);
 }
 
+// Optional numbering: Western, Arabic-Indic or Persian digits, then a dot,
+// bracket or the Chinese enumeration comma.
+const NUMBERING = '^\\s*(?:[0-9\\u0660-\\u0669\\u06F0-\\u06F9]+[.)、．]?\\s*)?';
+// Any run of long dashes separates: em and en dashes, the Chinese double
+// dash (——), the horizontal bar, two- and three-em dashes, the small em
+// dash and the full-width hyphen.
+const DASH_LINE = new RegExp(NUMBERING + '(.+?)\\s*[—–―⸺⸻﹘－]+\\s*(.+?)\\s*$');
+const HYPHEN_LINE = new RegExp(NUMBERING + '(.+?)\\s+-\\s+(.+?)\\s*$');
+
 function parseLine(line){
-  // Prefer em/en dash as the separator (hyphens can appear inside words like "well-known")
-  let m = line.match(/^\s*(?:\d+[\.\)]?\s*)?(.+?)\s*[—–]\s*(.+?)\s*$/);
-  // Fall back to a hyphen only when it has spaces around it
-  if(!m) m = line.match(/^\s*(?:\d+[\.\)]?\s*)?(.+?)\s+-\s+(.+?)\s*$/);
-  return m;
+  // Prefer a long dash as the separator (hyphens can appear inside words like
+  // "well-known"), and fall back to a hyphen only when it has spaces around it.
+  return line.match(DASH_LINE) || line.match(HYPHEN_LINE);
 }
 
 function parseBulk(text){
@@ -2577,7 +2612,7 @@ function parseBulk(text){
 }
 
 function summarizeList(words, limit){
-  const shown = words.slice(0, limit).join(', ');
+  const shown = words.slice(0, limit).map(isolate).join(', ');
   return words.length > limit ? t('andMore', {shown: shown, n: words.length - limit}) : shown;
 }
 
@@ -2659,7 +2694,7 @@ function deleteWord(id){
   renderStats();
   renderStatsPanel();
   renderWordList();
-  showUndo(t('deletedWord', {w: escapeHtml(card.word)}));
+  showUndo(t('deletedWord', {w: '<bdi>' + escapeHtml(card.word) + '</bdi>'}));
 }
 
 function deleteAllWords(){
@@ -2731,7 +2766,7 @@ function undoDelete(){
 // Translations are separated lists like "достоинство, заслуга; заслужить", so a
 // prefix match means any one of those words starts with the query.
 function translationWords(translation){
-  return normWord(translation).split(/[\s,;\/()]+/).filter(Boolean);
+  return normWord(translation).split(/[\s,;\/()，、；／（）،؛]+/).filter(Boolean);
 }
 
 function rankWords(pool, filter){
@@ -2777,8 +2812,8 @@ function renderWordList(){
       opts += '<option value="'+i+'"'+(c.box===i?' selected':'')+'>box '+i+'</option>';
     }
     row.innerHTML =
-      '<span class="w">' + escapeHtml(c.word) + '</span>' +
-      '<span class="t">' + escapeHtml(c.translation) + '</span>' +
+      '<span class="w"' + wordAttrs(c) + '>' + escapeHtml(c.word) + '</span>' +
+      '<span class="t"' + TRANS_ATTRS + '>' + escapeHtml(c.translation) + '</span>' +
       '<select class="box-select" title="Move to another box">' + opts + '</select>' +
       '<button class="del" title="Delete" aria-label="Delete">×</button>';
     row.querySelector('.box-select').addEventListener('change', (e)=>{
@@ -2836,8 +2871,21 @@ function renderStats(){
 function frontText(c){ return settings.direction === 'normal' ? c.word : c.translation; }
 function backText(c){ return settings.direction === 'normal' ? c.translation : c.word; }
 
+// Attributes for an element showing a word or a translation. Each takes its
+// direction from its own text, so Arabic reads right to left inside a left-
+// to-right layout. A word also carries its deck's language; a translation's
+// language isn't known, so it carries none.
+function wordAttrs(c){ return ' dir="auto" lang="' + deckVoice(c.deck) + '"'; }
+const TRANS_ATTRS = ' dir="auto"';
+function frontAttrs(c){ return settings.direction === 'normal' ? wordAttrs(c) : TRANS_ATTRS; }
+function backAttrs(c){ return settings.direction === 'normal' ? TRANS_ATTRS : wordAttrs(c); }
+// Wraps text going into a sentence built as plain text, so a right-to-left
+// word can't reorder the words and punctuation around it.
+function isolate(s){ return '\u2068' + s + '\u2069'; }
+
 function answerVariants(c){
-  return backText(c).split(/[,;\/]/).map(normWord).filter(Boolean);
+  // Alternatives are split on Latin, Chinese and Arabic commas and semicolons.
+  return backText(c).split(/[,;\/，、；／،؛]/).map(normWord).filter(Boolean);
 }
 
 function checkAnswer(input, c){
@@ -2899,10 +2947,10 @@ function learnRow(c, i){
   row.innerHTML =
     '<span class="learn-row-n">' + (i+1) + '</span>' +
     '<div class="learn-row-main">' +
-      '<div class="learn-row-word">' + escapeHtml(c.word) +
+      '<div class="learn-row-word"><span' + wordAttrs(c) + '>' + escapeHtml(c.word) + '</span>' +
         (c.seen ? '' : '<span class="learn-row-new">' + t('newBadge') + '</span>') +
       '</div>' +
-      '<div class="learn-row-trans">' + escapeHtml(c.translation) + '</div>' +
+      '<div class="learn-row-trans"' + TRANS_ATTRS + '>' + escapeHtml(c.translation) + '</div>' +
     '</div>' +
     '<button class="learn-row-know">' + (c.seen ? t('knownTick') : t('iKnowIt')) + '</button>';
   const btn = row.querySelector('.learn-row-know');
@@ -2956,9 +3004,9 @@ function renderLearn(){
     '<div class="learn-card">' +
       (c.seen ? '' : '<span class="learn-new">' + t('newBadge') + '</span>') +
       '<span class="learn-counter">' + (learnIdx+1) + ' / ' + learnList.length + '</span>' +
-      '<button class="speak-btn" id="learnSpeak" title="' + t('pronounce') + '" aria-label="' + t('pronounce') + '" style="top:34px;">' + SPEAKER_SVG + '</button>' +
-      '<div class="learn-word">' + escapeHtml(c.word) + '</div>' +
-      '<div class="learn-trans">' + escapeHtml(c.translation) + '</div>' +
+      '<button class="speak-btn" id="learnSpeak" title="' + t('pronounce') + '" aria-label="' + t('pronounce') + '">' + SPEAKER_SVG + '</button>' +
+      '<div class="learn-word"' + wordAttrs(c) + '>' + escapeHtml(c.word) + '</div>' +
+      '<div class="learn-trans"' + TRANS_ATTRS + '>' + escapeHtml(c.translation) + '</div>' +
     '</div>' +
     '<div class="learn-nav">' +
       '<button class="btn-nav" id="learnPrev"' + (learnIdx===0?' disabled':'') + '>←</button>' +
@@ -3047,7 +3095,7 @@ function renderQuiz(){
   const dirLabel = settings.direction === 'normal' ? t('chooseTranslation') : t('chooseWord');
   wrap.innerHTML =
     '<span class="quiz-label">' + dirLabel + '</span>' +
-    '<div class="quiz-prompt">' + escapeHtml(frontText(quiz.card)) + '</div>' +
+    '<div class="quiz-prompt"' + frontAttrs(quiz.card) + '>' + escapeHtml(frontText(quiz.card)) + '</div>' +
     '<div class="quiz-options" id="quizOpts"></div>' +
     '<div class="quiz-foot"><span id="quizScore"></span><span id="quizNextSlot"></span></div>';
   stage.appendChild(wrap);
@@ -3057,6 +3105,8 @@ function renderQuiz(){
     const b = document.createElement('button');
     b.className = 'quiz-opt';
     b.textContent = backText(o);
+    b.dir = 'auto';
+    if(settings.direction !== 'normal') b.lang = deckVoice(o.deck);
     if(quiz.answered){
       b.disabled = true;
       if(o.id === quiz.card.id) b.classList.add('right');
@@ -3190,6 +3240,8 @@ function matchTile(item, side){
   const b = document.createElement('button');
   b.className = 'match-tile' + (item.done ? ' gone' : '');
   b.textContent = item.text;
+  b.dir = 'auto';
+  if(side === 'left') b.lang = curDeck().voice;
   if(item.done){ b.disabled = true; return b; }
   if(match.picked && match.picked.side === side && match.picked.item === item){
     b.classList.add('picked');
@@ -3293,7 +3345,9 @@ function renderCard(animateIn){
     if(inp){
       inp.focus();
       inp.addEventListener('keydown', (e)=>{
-        if(e.key === 'Enter') submitTyped();
+        // While an input method is composing (pinyin, say), Enter picks the
+        // characters; it only submits once composing is done.
+        if(e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) submitTyped();
       });
       card.querySelector('#checkBtn').addEventListener('click', submitTyped);
     }
@@ -3317,9 +3371,9 @@ function submitTyped(){
 
 function renderCardBody(body){
   if(!flipped){
-    let html = '<div class="word">' + escapeHtml(frontText(current)) + '</div>';
+    let html = '<div class="word"' + frontAttrs(current) + '>' + escapeHtml(frontText(current)) + '</div>';
     if(settings.typing){
-      html += '<div class="type-row"><input class="type-input" id="typeInput" type="text" placeholder="' + t('typePh') + '" autocomplete="off" autocapitalize="off"><button class="btn-check" id="checkBtn">' + t('check') + '</button></div>';
+      html += '<div class="type-row"><input class="type-input" id="typeInput" type="text" dir="auto" placeholder="' + t('typePh') + '" autocomplete="off" autocapitalize="off"><button class="btn-check" id="checkBtn">' + t('check') + '</button></div>';
       html += '<div class="hint">' + t('orTapToReveal') + '</div>';
     } else {
       html += '<div class="hint">' + t('tapToReveal') + '</div>';
@@ -3327,9 +3381,9 @@ function renderCardBody(body){
     body.innerHTML = html;
   } else {
     let html =
-      '<div class="word">' + escapeHtml(frontText(current)) + '</div>' +
+      '<div class="word"' + frontAttrs(current) + '>' + escapeHtml(frontText(current)) + '</div>' +
       '<div class="divider"></div>' +
-      '<div class="translation">' + escapeHtml(backText(current)) + '</div>';
+      '<div class="translation"' + backAttrs(current) + '>' + escapeHtml(backText(current)) + '</div>';
     if(answered && lastAnswerCorrect !== null){
       html += '<div class="feedback ' + (lastAnswerCorrect ? 'right">' + t('correct') : 'wrong">' + t('notQuite')) + '</div>';
     }
@@ -3988,7 +4042,7 @@ function applyDeck(merged){
   }
   if(combined.length){
     const into = deckById(target(combined[0].id));
-    if(into) showDeckNotice(t('decksCombined', {name: into.name}));
+    if(into) showDeckNotice(t('decksCombined', {name: isolate(into.name)}));
   }
 }
 

@@ -400,12 +400,53 @@
     border-radius:6px; font-size:13px;
   }
   .toggle-add:hover{ background:var(--panel); }
-  .add-panel, .theme-panel, .stats-panel{
+  .add-panel, .theme-panel, .stats-panel, .deck-panel{
     margin-top:12px; background:var(--panel); border-radius:8px; padding:16px;
     display:none;
     transition:background-color .3s ease;
   }
-  .add-panel.open, .theme-panel.open, .stats-panel.open{ display:block; }
+  .add-panel.open, .theme-panel.open, .stats-panel.open, .deck-panel.open{ display:block; }
+  /* Decks */
+  .deck-bar{ display:flex; margin:-6px 0 12px; }
+  .deck-switch{
+    display:inline-flex; align-items:center; gap:6px; max-width:100%; min-height:36px;
+    padding:6px 10px 6px 13px; border-radius:20px;
+    background:var(--panel); border:1px solid var(--line); color:var(--paper);
+    font-size:14px; font-weight:600;
+  }
+  .deck-switch:hover{ filter:brightness(1.15); }
+  .deck-switch[aria-expanded="true"]{ border-color:var(--accent); }
+  .deck-switch-name{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; unicode-bidi:isolate; }
+  .deck-caret{ width:16px; height:16px; flex-shrink:0; color:var(--soft); }
+  .deck-panel{ margin:0 0 12px; }
+  .deck-head{ font-size:13px; font-weight:600; margin:0 0 8px; }
+  .deck-list{ display:flex; flex-direction:column; gap:4px; margin-bottom:10px; }
+  .deck-item{
+    display:flex; align-items:baseline; gap:10px; width:100%; text-align:start;
+    padding:9px 10px; background:rgba(0,0,0,0.18); border:1px solid transparent; color:var(--paper);
+    font-size:13.5px;
+  }
+  .deck-item:hover{ background:rgba(0,0,0,0.28); }
+  .deck-item.on{ border-color:var(--accent); }
+  /* The interface is always left to right, so names keep one left edge to
+     scan down even when a name itself reads right to left. */
+  .deck-item-name{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; unicode-bidi:isolate; text-align:left; }
+  .deck-item-meta{ flex-shrink:0; font-size:11.5px; font-weight:400; color:var(--soft); }
+  .deck-item-meta b{ font-weight:500; color:var(--accent); }
+  .deck-form{ display:flex; flex-direction:column; gap:8px; margin-bottom:6px; }
+  .deck-field{ display:flex; flex-direction:column; gap:4px; font-size:11.5px; color:var(--soft); }
+  .deck-input, .deck-select{
+    width:100%; background:rgba(0,0,0,0.28); color:var(--paper);
+    border:1px solid var(--line); border-radius:6px; padding:8px 10px;
+    font-family:'Inter',sans-serif; font-size:14px;
+  }
+  .deck-select option{ color:#111; }
+  .deck-actions{ display:flex; gap:8px; }
+  .deck-msg{ font-size:12px; color:var(--accent); min-height:16px; margin:4px 0 6px; }
+  .deck-settings{ display:flex; flex-direction:column; gap:8px; padding-top:12px; border-top:1px solid var(--line); }
+  .deck-settings .btn-delete-all{ align-self:flex-start; margin-top:4px; }
+  .btn-delete-all:disabled{ opacity:.45; cursor:default; }
+  .deck-note{ font-size:11.5px; color:var(--soft); margin:0; line-height:1.45; }
   .add-panel p, .theme-panel p{ font-size:12px; color:var(--soft); margin:0 0 10px; line-height:1.5; }
   textarea{
     width:100%; min-height:120px; background:rgba(0,0,0,0.28); color:var(--paper);
@@ -551,6 +592,8 @@
   body.landing-on .toggle-add,
   body.landing-on .add-panel,
   body.landing-on .stats-panel,
+  body.landing-on .deck-bar,
+  body.landing-on .deck-panel,
   body.landing-on .theme-panel{ display:none; }
   .about-link{
     background:transparent; border:none; color:var(--soft);
@@ -801,6 +844,16 @@
     </div>
   </div>
   <p class="subtitle anim-1"><span data-i18n="subtitle">Flashcards filed by how well you know them</span> <span style="opacity:0.45;font-size:11px;">· v2.3</span></p>
+  <div class="deck-bar anim-1">
+    <button class="deck-switch" id="deckSwitch" aria-expanded="false" aria-controls="deckPanel" data-i18n-title="deckMenu" data-i18n-aria="deckMenu">
+      <span class="deck-switch-name" id="deckSwitchName" dir="auto"></span>
+      <svg class="deck-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+  </div>
+  <div class="deck-panel" id="deckPanel">
+    <div id="deckPanelBody"></div>
+    <div class="undo-row" id="deckUndoRow" style="display:none;"></div>
+  </div>
 
   <section class="landing" id="landing">
     <h2 class="landing-title anim-1">Vocab Box</h2>
@@ -1044,6 +1097,13 @@ const I18N = {
       stStreak: 'day streak', stToday: 'reviews today', stWeek: 'this week',
       stTotal: 'all time', stMastered: 'mastered (box 5)', stCards: 'total cards',
       stAllDecks: 'All decks', stDecks: 'decks',
+      deckMenu: 'Switch deck', decksTitle: 'Decks', deckDue: '{n} due', newDeck: '+ New deck',
+      deckName: 'Name', deckNamePh: 'Deck name, e.g. German', deckVoice: 'Voice language',
+      createDeck: 'Create', deckSettings: 'Deck settings', deleteDeck: 'Delete deck',
+      confirmDeleteDeck: 'Delete the deck “{name}” and its {n}?',
+      confirmDeleteDeckEmpty: 'Delete the empty deck “{name}”?',
+      deletedDeck: 'Deleted deck {name}', deckLastNote: 'Your only deck can’t be deleted.',
+      deckNameEmpty: 'Give the deck a name.', deckNameTaken: 'You already have a deck with that name.',
       exportBtn: 'Export backup', importBtn: 'Import',
       backupDone: 'Backup downloaded.',
       backupBad: 'Could not read that file. Is it a Vocab Box backup?',
@@ -1174,6 +1234,13 @@ const I18N = {
       stStreak: 'дней подряд', stToday: 'повторов сегодня', stWeek: 'за неделю',
       stTotal: 'за всё время', stMastered: 'выучено (ящик 5)', stCards: 'всего карточек',
       stAllDecks: 'Все наборы', stDecks: 'всего наборов',
+      deckMenu: 'Сменить набор', decksTitle: 'Наборы', deckDue: 'к повтору: {n}', newDeck: '+ Новый набор',
+      deckName: 'Название', deckNamePh: 'Название, например «Немецкий»', deckVoice: 'Язык озвучки',
+      createDeck: 'Создать', deckSettings: 'Настройки набора', deleteDeck: 'Удалить набор',
+      confirmDeleteDeck: 'Удалить набор «{name}» и {n} в нём?',
+      confirmDeleteDeckEmpty: 'Удалить пустой набор «{name}»?',
+      deletedDeck: 'Набор {name} удалён', deckLastNote: 'Единственный набор нельзя удалить.',
+      deckNameEmpty: 'Введите название набора.', deckNameTaken: 'Набор с таким названием уже есть.',
       exportBtn: 'Скачать копию', importBtn: 'Загрузить',
       backupDone: 'Резервная копия скачана.',
       backupBad: 'Не удалось прочитать файл. Это резервная копия Vocab Box?',
@@ -1306,6 +1373,13 @@ const I18N = {
       stStreak: 'kun ketma-ket', stToday: 'bugungi takrorlar', stWeek: 'shu hafta',
       stTotal: 'jami', stMastered: 'oʻzlashtirilgan (5-quti)', stCards: 'jami kartochka',
       stAllDecks: 'Barcha toʻplamlar', stDecks: 'jami toʻplam',
+      deckMenu: 'Toʻplamni almashtirish', decksTitle: 'Toʻplamlar', deckDue: 'takrorga: {n}', newDeck: '+ Yangi toʻplam',
+      deckName: 'Nomi', deckNamePh: 'Toʻplam nomi, masalan: Nemis tili', deckVoice: 'Ovoz tili',
+      createDeck: 'Yaratish', deckSettings: 'Toʻplam sozlamalari', deleteDeck: 'Toʻplamni oʻchirish',
+      confirmDeleteDeck: '«{name}» toʻplami va undagi {n} oʻchirilsinmi?',
+      confirmDeleteDeckEmpty: 'Boʻsh «{name}» toʻplami oʻchirilsinmi?',
+      deletedDeck: '{name} toʻplami oʻchirildi', deckLastNote: 'Yagona toʻplamni oʻchirib boʻlmaydi.',
+      deckNameEmpty: 'Toʻplamga nom bering.', deckNameTaken: 'Bunday nomli toʻplam allaqachon bor.',
       exportBtn: 'Zaxira nusxa', importBtn: 'Yuklash',
       backupDone: 'Zaxira nusxa yuklab olindi.',
       backupBad: 'Faylni oʻqib boʻlmadi. Bu Vocab Box zaxira nusxasimi?',
@@ -1484,6 +1558,7 @@ function relocalize(){
   renderStats();
   renderStatsPanel();
   renderWordList();
+  renderDeckPanel();
   renderSyncPanel();
   renderCard(false);
 }
@@ -1752,6 +1827,221 @@ function adoptDeck(d){
   decks.push({id: want.id, name: cleanDeckName(want.name), voice: cleanVoice(want.voice), changedAt: Date.now()});
   saveDecks();
   return want.id;
+}
+
+// Shown by name in the interface's language, with the id as a tie-break so
+// every device lists equal names in the same order.
+function sortedDecks(){
+  const loc = langTag(lang);
+  return decks.slice().sort((a,b)=> a.name.localeCompare(b.name, loc) || (a.id < b.id ? -1 : 1));
+}
+
+// An i18n key for why a name can't be used, or '' if it can.
+function deckNameProblem(name, exceptId){
+  const clean = cleanDeckName(name);
+  if(!clean) return 'deckNameEmpty';
+  const k = deckNameKey(clean);
+  if(decks.some(d => d.id !== exceptId && deckNameKey(d.name) === k)) return 'deckNameTaken';
+  return '';
+}
+
+// Switching starts the current mode over in the new deck: a fresh review
+// queue and Learn list, and no quiz question or match carried across.
+function switchDeck(id){
+  if(!deckById(id)) return;
+  currentDeck = id;
+  try{ localStorage.setItem(CURRENT_DECK_KEY, id); }catch(e){}
+  boxFilter = null;
+  learnList = [];
+  setMode(mode);
+  renderStats();
+  renderStatsPanel();
+  renderWordList();
+  renderDeckPanel();
+}
+
+function createDeck(name, voice){
+  const problem = deckNameProblem(name);
+  if(problem) return problem;
+  const d = {id: newDeckId(), name: cleanDeckName(name), voice: cleanVoice(voice), changedAt: Date.now()};
+  decks.push(d);
+  saveDecks();
+  switchDeck(d.id);
+  return '';
+}
+
+function renameDeck(id, name){
+  const d = deckById(id);
+  if(!d) return '';
+  const problem = deckNameProblem(name, id);
+  if(problem) return problem;
+  const clean = cleanDeckName(name);
+  if(clean !== d.name){
+    d.name = clean;
+    d.changedAt = Date.now();
+    saveDecks();
+  }
+  return '';
+}
+
+function setDeckVoice(id, voice){
+  const d = deckById(id);
+  if(!d || cleanVoice(voice) === d.voice) return;
+  d.voice = cleanVoice(voice);
+  d.changedAt = Date.now();
+  saveDecks();
+  renderCard(false);
+}
+
+// Deleting a deck works like deleting its words: the deck and each card get
+// a tombstone, so the deletion spreads to other devices, and undo restores
+// them as a fresh edit. The last deck stays, so there is always one to show.
+function deleteDeck(id){
+  const d = deckById(id);
+  if(!d || decks.length < 2) return;
+  const mine = cards.filter(c => c.deck === id);
+  const ask = mine.length ? t('confirmDeleteDeck', {name: d.name, n: count('word', mine.length)})
+                          : t('confirmDeleteDeckEmpty', {name: d.name});
+  if(!confirm(ask)) return;
+  decks = decks.filter(x => x.id !== id);
+  deckTombstones = deckTombstones.filter(tb => tb.id !== id)
+    .concat([{id, name: d.name, voice: d.voice, changedAt: Date.now(), deleted: true}]);
+  saveDecks();
+  cards = cards.filter(c => c.deck !== id);
+  addTombstones(mine);
+  saveCards();
+  lastDeleted = mine;
+  lastDeletedDeck = d;
+  if(currentDeck === id) switchDeck(sortedDecks()[0].id);
+  else renderDeckPanel();
+  renderStatsPanel();
+  showUndo(t('deletedDeck', {name: '<bdi>' + escapeHtml(d.name) + '</bdi>'}), 'deckUndoRow');
+}
+
+const VOICE_LANGS = ['ar-SA', 'ar-EG', 'az-AZ', 'cs-CZ', 'da-DK', 'de-DE', 'el-GR', 'en-AU', 'en-GB', 'en-US',
+  'es-ES', 'es-MX', 'fa-IR', 'fi-FI', 'fr-FR', 'he-IL', 'hi-IN', 'hu-HU', 'id-ID', 'it-IT', 'ja-JP', 'kk-KZ',
+  'ko-KR', 'nb-NO', 'nl-NL', 'pl-PL', 'pt-BR', 'pt-PT', 'ro-RO', 'ru-RU', 'sv-SE', 'th-TH', 'tr-TR', 'uk-UA',
+  'uz-UZ', 'vi-VN', 'zh-CN', 'zh-TW'];
+
+// A language tag named in the interface's language, e.g. "German (Germany)".
+function voiceLabel(tag){
+  try{ return new Intl.DisplayNames([langTag(lang)], {type: 'language'}).of(tag) || tag; }
+  catch(e){ return tag; }
+}
+function voiceOptions(selected){
+  const loc = langTag(lang);
+  return [...new Set(VOICE_LANGS.concat([selected]))]
+    .map(tag => ({tag, label: voiceLabel(tag)}))
+    .sort((a,b)=> a.label.localeCompare(b.label, loc))
+    .map(o => '<option value="' + o.tag + '"' + (o.tag === selected ? ' selected' : '') + '>' + escapeHtml(o.label) + '</option>')
+    .join('');
+}
+
+let deckUi = 'idle';        // idle | new (the new-deck form is open)
+let deckMsg = '';           // an i18n key, so an open message follows a language switch
+let newDeckDraft = {name: '', voice: 'en-US'};
+let lastDeletedDeck = null;
+
+function deckPanelOpen(){
+  return document.getElementById('deckPanel').classList.contains('open');
+}
+function closeDeckPanel(){
+  document.getElementById('deckPanel').classList.remove('open');
+  deckUi = 'idle';
+  deckMsg = '';
+  renderDeckPanel();
+}
+
+// The switcher always shows the current deck. The panel is only built while
+// open, and drafts live outside it, so a re-render mid-typing loses nothing.
+function renderDeckPanel(){
+  const d = curDeck();
+  const sw = document.getElementById('deckSwitchName');
+  sw.textContent = d.name;
+  sw.lang = d.voice;
+  document.getElementById('deckSwitch').setAttribute('aria-expanded', deckPanelOpen() ? 'true' : 'false');
+  const box = document.getElementById('deckPanelBody');
+  if(!deckPanelOpen()){ box.innerHTML = ''; return; }
+  const now = Date.now();
+  let html = '<div class="deck-head">' + t('decksTitle') + '</div><div class="deck-list">';
+  sortedDecks().forEach(x=>{
+    const mine = cards.filter(c => c.deck === x.id);
+    const due = mine.filter(c => c.due <= now).length;
+    const on = x.id === currentDeck;
+    html += '<button class="deck-item' + (on ? ' on' : '') + '" data-deck="' + x.id + '"' + (on ? ' aria-current="true"' : '') + '>' +
+      '<span class="deck-item-name" dir="auto" lang="' + x.voice + '">' + escapeHtml(x.name) + '</span>' +
+      '<span class="deck-item-meta">' + (due ? '<b>' + t('deckDue', {n: due}) + '</b> · ' : '') + count('card', mine.length) + '</span>' +
+    '</button>';
+  });
+  html += '</div>';
+  if(deckUi === 'new'){
+    html += '<div class="deck-form">' +
+      '<input class="deck-input" id="newDeckName" type="text" dir="auto" maxlength="' + DECK_NAME_MAX + '" autocomplete="off"' +
+        ' placeholder="' + escapeHtml(t('deckNamePh')) + '" aria-label="' + escapeHtml(t('deckName')) + '">' +
+      '<label class="deck-field"><span>' + t('deckVoice') + '</span>' +
+        '<select class="deck-select" id="newDeckVoice">' + voiceOptions(newDeckDraft.voice) + '</select></label>' +
+      '<div class="deck-actions"><button class="btn-parse" id="newDeckGo">' + t('createDeck') + '</button>' +
+        '<button class="btn-muted" id="newDeckCancel">' + t('syncCancel') + '</button></div>' +
+    '</div>';
+  } else {
+    html += '<button class="btn-secondary" id="newDeckBtn">' + t('newDeck') + '</button>';
+  }
+  html += '<div class="deck-msg" role="status" aria-live="polite">' + (deckMsg ? escapeHtml(t(deckMsg)) : '') + '</div>';
+  html += '<div class="deck-settings">' +
+    '<div class="deck-head">' + t('deckSettings') + '</div>' +
+    '<label class="deck-field"><span>' + t('deckName') + '</span>' +
+      '<input class="deck-input" id="deckNameInput" type="text" dir="auto" maxlength="' + DECK_NAME_MAX + '" autocomplete="off" lang="' + d.voice + '"></label>' +
+    '<label class="deck-field"><span>' + t('deckVoice') + '</span>' +
+      '<select class="deck-select" id="deckVoiceSelect">' + voiceOptions(d.voice) + '</select></label>' +
+    '<button class="btn-delete-all" id="deleteDeckBtn"' + (decks.length < 2 ? ' disabled' : '') + '>' + t('deleteDeck') + '</button>' +
+    (decks.length < 2 ? '<p class="deck-note">' + t('deckLastNote') + '</p>' : '') +
+  '</div>';
+  box.innerHTML = html;
+
+  box.querySelectorAll('.deck-item').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const id = b.dataset.deck;
+      closeDeckPanel();
+      if(id !== currentDeck) switchDeck(id);
+    });
+  });
+  const on = (id, fn) => { const el = document.getElementById(id); if(el) el.addEventListener('click', fn); };
+  on('newDeckBtn', ()=>{
+    deckUi = 'new'; deckMsg = ''; newDeckDraft = {name: '', voice: 'en-US'};
+    renderDeckPanel();
+    document.getElementById('newDeckName').focus();
+  });
+  on('newDeckCancel', ()=>{ deckUi = 'idle'; deckMsg = ''; renderDeckPanel(); });
+  const create = ()=>{
+    const problem = createDeck(newDeckDraft.name, newDeckDraft.voice);
+    if(problem){ deckMsg = problem; renderDeckPanel(); document.getElementById('newDeckName').focus(); return; }
+    // A new deck is empty, so go straight to adding its words.
+    closeDeckPanel();
+    document.getElementById('addPanel').classList.add('open');
+    renderWordList();
+    document.getElementById('bulkInput').focus();
+  };
+  on('newDeckGo', create);
+  const nameIn = document.getElementById('newDeckName');
+  if(nameIn){
+    nameIn.value = newDeckDraft.name;
+    nameIn.addEventListener('input', ()=>{ newDeckDraft.name = nameIn.value; });
+    nameIn.addEventListener('keydown', e=>{ if(e.key === 'Enter' && !e.isComposing) create(); });
+    document.getElementById('newDeckVoice').addEventListener('change', e=>{ newDeckDraft.voice = e.target.value; });
+  }
+  const rename = document.getElementById('deckNameInput');
+  rename.value = d.name;
+  rename.addEventListener('keydown', e=>{ if(e.key === 'Enter' && !e.isComposing) rename.blur(); });
+  rename.addEventListener('change', ()=>{
+    deckMsg = renameDeck(d.id, rename.value);
+    renderDeckPanel();
+    renderStatsPanel();
+  });
+  document.getElementById('deckVoiceSelect').addEventListener('change', e=>{
+    setDeckVoice(d.id, e.target.value);
+    renderDeckPanel();
+  });
+  on('deleteDeckBtn', ()=> deleteDeck(d.id));
 }
 
 function todayKey(offsetDays){
@@ -2233,6 +2523,7 @@ function deleteWord(id){
   const card = cards.find(c => c.id === id);
   if(!card) return;
   lastDeleted = [card];
+  lastDeletedDeck = null;
   cards = cards.filter(c => c.id !== id);
   addTombstones([card]);
   queue = queue.filter(c => c.id !== id);
@@ -2253,6 +2544,7 @@ function deleteAllWords(){
   const n = mine.length;
   if(!confirm(t('confirmDeleteAll', {n: count('word', n)}))) return;
   lastDeleted = mine;
+  lastDeletedDeck = null;
   cards = cards.filter(c => c.deck !== currentDeck);
   addTombstones(lastDeleted);
   queue = [];
@@ -2266,29 +2558,45 @@ function deleteAllWords(){
   showUndo(t('deletedAll', {n: count('word', n)}));
 }
 
-function showUndo(message){
-  const bar = document.getElementById('undoRow');
-  bar.innerHTML = message + ' — <button class="undo-btn" id="undoBtn">' + t('undo') + '</button>';
+// The undo bar shows next to whatever was deleted: the word list, or the
+// deck panel for a deck.
+function showUndo(message, rowId){
+  hideUndo();
+  const bar = document.getElementById(rowId || 'undoRow');
+  bar.innerHTML = message + ' — <button class="undo-btn">' + t('undo') + '</button>';
   bar.style.display = 'block';
-  document.getElementById('undoBtn').addEventListener('click', undoDelete);
+  bar.querySelector('.undo-btn').addEventListener('click', undoDelete);
   clearTimeout(undoTimer);
   undoTimer = setTimeout(()=>{
-    bar.style.display = 'none';
+    hideUndo();
     lastDeleted = null;
+    lastDeletedDeck = null;
   }, 7000);
+}
+function hideUndo(){
+  document.getElementById('undoRow').style.display = 'none';
+  document.getElementById('deckUndoRow').style.display = 'none';
 }
 
 function undoDelete(){
   if(!lastDeleted) return;
   // Restoring is a fresh edit, so it beats the tombstone even if the deletion
   // has already reached other devices.
+  const deck = lastDeletedDeck;
+  if(deck){
+    deckTombstones = deckTombstones.filter(tb => tb.id !== deck.id);
+    if(!deckById(deck.id)) decks.push(Object.assign({}, deck, {changedAt: Date.now()}));
+    saveDecks();
+  }
   lastDeleted.forEach(touch);
   clearTombstones(lastDeleted);
   cards = cards.concat(lastDeleted);
   lastDeleted = null;
+  lastDeletedDeck = null;
   clearTimeout(undoTimer);
-  document.getElementById('undoRow').style.display = 'none';
+  hideUndo();
   saveCards();
+  if(deck){ switchDeck(deck.id); return; }
   buildQueue();
   renderStats();
   renderStatsPanel();
@@ -3004,12 +3312,23 @@ document.getElementById('deleteAllBtn').addEventListener('click', deleteAllWords
 document.getElementById('themeBtn').addEventListener('click', ()=>{
   document.getElementById('themePanel').classList.toggle('open');
   document.getElementById('statsPanel').classList.remove('open');
+  if(deckPanelOpen()) closeDeckPanel();
 });
 
 document.getElementById('statsBtn').addEventListener('click', ()=>{
   renderStatsPanel();
   document.getElementById('statsPanel').classList.toggle('open');
   document.getElementById('themePanel').classList.remove('open');
+  if(deckPanelOpen()) closeDeckPanel();
+});
+
+document.getElementById('deckSwitch').addEventListener('click', ()=>{
+  if(deckPanelOpen()){ closeDeckPanel(); return; }
+  document.getElementById('deckPanel').classList.add('open');
+  document.getElementById('themePanel').classList.remove('open');
+  document.getElementById('statsPanel').classList.remove('open');
+  deckUi = 'idle'; deckMsg = '';
+  renderDeckPanel();
 });
 
 document.getElementById('uploadBtn').addEventListener('click', ()=>{
@@ -3100,6 +3419,7 @@ function showLanding(){
   document.getElementById('addPanel').classList.remove('open');
   document.getElementById('themePanel').classList.remove('open');
   document.getElementById('statsPanel').classList.remove('open');
+  document.getElementById('deckPanel').classList.remove('open');
   resetLandingJoin();
   document.getElementById('landingSample').style.display = isEnglishDeck() ? '' : 'none';
   document.body.classList.add('landing-on');
@@ -3894,6 +4214,7 @@ function init(){
   buildQueue();
   renderStats();
   renderStatsPanel();
+  renderDeckPanel();
   renderCard(false);
   startSync();
   if(cards.length === 0) showLanding();

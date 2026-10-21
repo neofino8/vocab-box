@@ -33,11 +33,12 @@
     --ink-soft:#5B584C;
     --navy:#2B3A4A;
     --soft:#8A97A3;
-    --teal:#3F7568;
+    --teal:#376A5E;
     --teal-light:#DCE9E4;
-    --brick:#A24B36;
+    --brick:#9A4532;
     --brick-light:#F1DCD3;
     --accent:#C99A3E;
+    --on-accent:#242420;
     --bg:#182027;
     --panel:#202A32;
     --line:rgba(239,234,217,0.14);
@@ -197,7 +198,7 @@
     width:100%; margin-top:18px; font-size:13px; color:var(--soft);
   }
   .btn-next{
-    padding:11px 20px; background:var(--accent); color:var(--ink); font-size:13px;
+    padding:11px 20px; background:var(--accent); color:var(--on-accent); font-size:13px;
   }
   .btn-next:hover{ filter:brightness(1.05); }
 
@@ -324,7 +325,7 @@
   }
   .tab{
     position:absolute; top:-12px; left:20px;
-    background:var(--navy); color:var(--paper);
+    background:var(--navy); color:#EFEAD9;
     font-family:var(--font-mono); font-size:11px; letter-spacing:0.6px;
     text-transform:uppercase;
     padding:4px 10px; border-radius:3px 3px 0 0;
@@ -380,7 +381,7 @@
   .type-input::placeholder{ color:var(--card-ink-soft); opacity:0.7; }
   .type-input:focus{ outline:2px solid var(--card-trans); }
   .btn-check{
-    padding:12px 18px; background:var(--navy); color:var(--paper);
+    padding:12px 18px; background:var(--navy); color:#EFEAD9;
   }
   .rate-row{
     display:flex; gap:10px; width:100%; margin-top:4px;
@@ -481,7 +482,7 @@
   }
   .parse-msg{ font-size:12px; color:var(--accent); line-height:1.5; flex:1; }
   .btn-parse{
-    padding:9px 16px; background:var(--accent); color:var(--ink);
+    padding:9px 16px; background:var(--accent); color:var(--on-accent);
   }
   .btn-parse:hover{ filter:brightness(1.05); }
   .word-list-head{
@@ -540,7 +541,7 @@
   }
   .btn-sample{
     margin-top:10px; padding:11px 22px;
-    background:var(--accent); color:var(--ink);
+    background:var(--accent); color:var(--on-accent);
     font-size:13px;
   }
   .btn-sample:hover{ filter:brightness(1.05); }
@@ -563,6 +564,8 @@
     position:absolute; bottom:0; left:0; right:0; height:5px;
   }
   .swatch.active{ border-color:var(--paper); }
+  .swatch-light{ box-shadow:inset 0 0 0 1px var(--line); }
+  .swatch.swatch-light span{ color:rgba(0,0,0,0.62); text-shadow:none; }
   .swatch span{
     position:absolute; bottom:9px; left:0; right:0;
     font-size:9px; text-align:center; letter-spacing:0.4px;
@@ -663,7 +666,7 @@
   }
   .btn-landing{
     width:100%; padding:15px 20px;
-    background:var(--accent); color:var(--ink);
+    background:var(--accent); color:var(--on-accent);
     font-size:15px; font-weight:600;
   }
   .btn-landing:hover{ filter:brightness(1.05); }
@@ -747,7 +750,7 @@
     letter-spacing:.7px; padding:0 7px; border-radius:16px;
   }
   .lang-seg:not(.on):hover{ color:var(--paper); }
-  .lang-seg.on{ color:var(--ink); }
+  .lang-seg.on{ color:var(--on-accent); }
   @media (prefers-reduced-motion: no-preference){
     .lang-ind[data-ready]{
       transition:transform .25s cubic-bezier(.4,0,.2,1), width .25s cubic-bezier(.4,0,.2,1);
@@ -853,6 +856,32 @@
     .sync-status.st-syncing .sync-dot{ animation:syncPulse .9s ease-in-out infinite alternate; }
     @keyframes syncPulse{ from{ opacity:.3; } to{ opacity:1; } }
   }
+  /* Light themes. The UI text colour (--paper) and the borders turn dark,
+     the black wells that darken a dark panel turn faint, and cards get an
+     edge because a paper card on a pale page has none of its own. bg, panel,
+     soft and accent still come from the theme in JS. */
+  :root.theme-light{
+    --paper:#2A2620;
+    --line:rgba(42,38,32,0.16);
+    --on-accent:#FFFFFF;
+  }
+  .theme-light .subtitle, .theme-light .statline, .theme-light .landing-lede{ text-shadow:none; }
+  .theme-light .deck-item, .theme-light .deck-input, .theme-light .deck-select,
+  .theme-light .deck-voice-note, .theme-light textarea, .theme-light .word-filter,
+  .theme-light .word-row .box-select, .theme-light .undo-row, .theme-light .stat-tile,
+  .theme-light .sync-code, .theme-light .sync-input{ background:rgba(0,0,0,0.05); }
+  .theme-light .deck-item:hover, .theme-light .btn-secondary:hover{ background:rgba(0,0,0,0.08); }
+  .theme-light .btn-delete-all{ border-color:rgba(154,69,50,0.45); color:var(--brick); }
+  .theme-light .btn-delete-all:hover{ background:rgba(154,69,50,0.08); }
+  .theme-light body.has-image::before{ background:rgba(250,248,244,0.62); }
+  .theme-light .card{
+    box-shadow:0 0 0 1px rgba(0,0,0,0.10), 0 2px 10px rgba(0,0,0,0.07), 0 14px 0 -6px rgba(0,0,0,0.10);
+  }
+  .theme-light .learn-card, .theme-light .quiz-opt:not(.right):not(.wrong),
+  .theme-light .match-tile:not(.hit):not(.miss){
+    box-shadow:0 0 0 1px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .theme-light .tab-btn.on{ box-shadow:0 0 0 1px rgba(0,0,0,0.10); }
 </style>
 </head>
 <body>
@@ -1048,8 +1077,11 @@ const DEFAULT_DECK = 'default';
 const DEFAULT_DECK_NAME = 'IELTS';
 const DECK_NAME_MAX = 40;
 
-// `soft` is the muted text colour. It is drawn on the theme's panel, the
-// lightest surface it sits on, so it must reach 4.5:1 against `panel`.
+// `soft` is the muted text colour. On a dark theme it is drawn on the theme's
+// panel, the lightest surface it sits on, so it must reach 4.5:1 against
+// `panel`. On a light theme the darkest surface is the faint well inside a
+// panel, so `soft` and `accent` must reach 4.5:1 against that, and white
+// text on `accent` must too.
 const THEMES = [
   {id:'slate',  key:'thSlate',  bg:'#182027', panel:'#202A32', accent:'#C99A3E', soft:'#8A97A3'},
   {id:'night',  key:'thNight',  bg:'#101014', panel:'#1A1A22', accent:'#8B7FD4', soft:'#8A97A3'},
@@ -1058,8 +1090,18 @@ const THEMES = [
   {id:'sand',   key:'thSand',   bg:'#4A4030', panel:'#584D3B', accent:'#E8C468', soft:'#BBC3CA'},
   {id:'ocean',  key:'thOcean',  bg:'#132836', panel:'#1C3544', accent:'#5FB3CE', soft:'#909DA8'},
   {id:'wine',   key:'thWine',   bg:'#2E161B', panel:'#3C2027', accent:'#E0868E', soft:'#8A97A3'},
-  {id:'coal',   key:'thCoal',   bg:'#1E1E1E', panel:'#292929', accent:'#B8B8B8', soft:'#8A97A3'}
+  {id:'coal',   key:'thCoal',   bg:'#1E1E1E', panel:'#292929', accent:'#B8B8B8', soft:'#8A97A3'},
+  {id:'paper',  key:'thPaper',  bg:'#F3EEE3', panel:'#FBF8F1', accent:'#7F510A', soft:'#6A6255', light:true},
+  {id:'mist',   key:'thMist',   bg:'#E8EBEE', panel:'#F6F7F9', accent:'#2C6188', soft:'#56616B', light:true}
 ];
+// Auto is stored like a theme id but resolves to one of these two from the
+// device's light/dark setting, and follows it when it changes.
+const AUTO_THEME = 'auto';
+const AUTO_DARK = 'slate';
+const AUTO_LIGHT = 'paper';
+const darkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+function isThemeId(id){ return id === AUTO_THEME || THEMES.some(th => th.id === id); }
+function themeById(id){ return THEMES.find(th => th.id === id); }
 
 const CARD_COLORS = [
   {id:'#EFEAD9', key:'cPaper'},
@@ -1175,6 +1217,7 @@ const I18N = {
       imageTooBig: 'That image is too large to save. Try a smaller one.',
       thSlate:'Slate', thNight:'Night', thForest:'Forest', thPlum:'Plum',
       thSand:'Sand', thOcean:'Ocean', thWine:'Wine', thCoal:'Coal',
+      thPaper:'Paper', thMist:'Mist', thAuto:'Auto',
       cPaper:'Paper', cSnow:'Snow', cMint:'Mint', cSky:'Sky',
       cRose:'Rose', cLilac:'Lilac', cCharcoal:'Charcoal', cInk:'Ink',
 
@@ -1319,6 +1362,7 @@ const I18N = {
       imageTooBig: 'Изображение слишком большое. Попробуйте поменьше.',
       thSlate:'Графит', thNight:'Ночь', thForest:'Лес', thPlum:'Слива',
       thSand:'Песок', thOcean:'Океан', thWine:'Вино', thCoal:'Уголь',
+      thPaper:'Бумага', thMist:'Туман', thAuto:'Авто',
       cPaper:'Бумага', cSnow:'Снег', cMint:'Мята', cSky:'Небо',
       cRose:'Роза', cLilac:'Сирень', cCharcoal:'Графит', cInk:'Чернила',
 
@@ -1465,6 +1509,7 @@ const I18N = {
       imageTooBig: 'Rasm juda katta. Kichikrogʻini tanlang.',
       thSlate:'Grafit', thNight:'Tun', thForest:'Oʻrmon', thPlum:'Olxoʻri',
       thSand:'Qum', thOcean:'Okean', thWine:'Vino', thCoal:'Koʻmir',
+      thPaper:'Qogʻoz', thMist:'Tuman', thAuto:'Avto',
       cPaper:'Qogʻoz', cSnow:'Qor', cMint:'Yalpiz', cSky:'Osmon',
       cRose:'Atirgul', cLilac:'Siren', cCharcoal:'Grafit', cInk:'Siyoh',
 
@@ -1602,6 +1647,9 @@ function applyStaticI18n(){
 function relocalize(){
   renderSwatches();
   renderCardSwatches();
+  // The swatches were rebuilt, so mark the current ones again.
+  applyTheme();
+  applyCardColor();
   renderChips();
   renderStats();
   renderStatsPanel();
@@ -2220,12 +2268,15 @@ function renderStatsPanel(){
 function applyTheme(){
   const themeId = localStorage.getItem(THEME_KEY) || 'slate';
   const bgImage = localStorage.getItem(BG_IMAGE_KEY);
-  const theme = THEMES.find(t=>t.id===themeId) || THEMES[0];
+  const resolved = themeId === AUTO_THEME ? (darkScheme.matches ? AUTO_DARK : AUTO_LIGHT) : themeId;
+  const theme = themeById(resolved) || THEMES[0];
   const root = document.documentElement.style;
   root.setProperty('--bg', theme.bg);
   root.setProperty('--panel', theme.panel);
   root.setProperty('--accent', theme.accent);
   root.setProperty('--soft', theme.soft);
+  document.documentElement.classList.toggle('theme-light', !!theme.light);
+  document.querySelector('meta[name="theme-color"]').setAttribute('content', theme.bg);
   if(bgImage){
     document.body.style.backgroundImage = 'url(' + bgImage + ')';
     document.body.classList.add('has-image');
@@ -2302,9 +2353,13 @@ function renderCardSwatches(){
 function renderSwatches(){
   const wrap = document.getElementById('swatches');
   wrap.innerHTML = '';
-  THEMES.forEach(th=>{
+  const dark = themeById(AUTO_DARK), light = themeById(AUTO_LIGHT);
+  const auto = {id:AUTO_THEME, key:'thAuto', light:true,
+    bg:'linear-gradient(to bottom, ' + dark.bg + ' 50%, ' + light.bg + ' 50%)',
+    accent:'linear-gradient(to right, ' + dark.accent + ' 50%, ' + light.accent + ' 50%)'};
+  [auto, ...THEMES].forEach(th=>{
     const s = document.createElement('div');
-    s.className = 'swatch';
+    s.className = 'swatch' + (th.light ? ' swatch-light' : '');
     s.dataset.theme = th.id;
     s.style.background = th.bg;
     s.innerHTML = '<span>' + t(th.key) + '</span><div class="accent-strip" style="background:' + th.accent + '"></div>';
@@ -3931,7 +3986,7 @@ function localSettingsUnit(){
     cardColor: (localStorage.getItem(CARD_KEY) || '#EFEAD9').toUpperCase(),
     direction: settings.direction === 'reverse' ? 'reverse' : 'normal',
     lang: lang,
-    theme: THEMES.some(th => th.id === theme) ? theme : 'slate',
+    theme: isThemeId(theme) ? theme : 'slate',
     typing: !!settings.typing,
     changedAt: +settings.sharedChangedAt || 0
   };
@@ -3945,7 +4000,7 @@ function readSettingsUnit(x){
   if(typeof x.cardColor === 'string' && /^#[0-9A-Fa-f]{6}$/.test(x.cardColor)) u.cardColor = x.cardColor.toUpperCase();
   if(x.direction === 'normal' || x.direction === 'reverse') u.direction = x.direction;
   if(typeof x.lang === 'string' && I18N[x.lang]) u.lang = x.lang;
-  if(THEMES.some(th => th.id === x.theme)) u.theme = x.theme;
+  if(isThemeId(x.theme)) u.theme = x.theme;
   if(typeof x.typing === 'boolean') u.typing = x.typing;
   // Voice used to be shared here; it belongs to each deck now and syncs with it.
   u.changedAt = +x.changedAt;
@@ -4502,6 +4557,9 @@ function init(){
   renderSwatches();
   renderCardSwatches();
   applyTheme();
+  darkScheme.addEventListener('change', ()=>{
+    if(localStorage.getItem(THEME_KEY) === AUTO_THEME) applyTheme();
+  });
   applyCardColor();
   renderChips();
   buildQueue();

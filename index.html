@@ -39,6 +39,7 @@
     --brick-light:#F1DCD3;
     --accent:#C99A3E;
     --on-accent:#242420;
+    --danger:#E0868E;
     --bg:#182027;
     --panel:#202A32;
     --line:rgba(239,234,217,0.14);
@@ -547,10 +548,12 @@
   .btn-sample:hover{ filter:brightness(1.05); }
   .btn-delete-all{
     margin-top:14px; padding:9px 14px;
-    background:transparent; border:1px solid rgba(224,134,142,0.45); color:#E0868E;
-    font-size:12.5px;
+    background:transparent; border:1px solid color-mix(in srgb, var(--danger) 45%, transparent);
+    color:var(--danger); font-size:12.5px;
   }
-  .btn-delete-all:hover{ background:rgba(224,134,142,0.1); }
+  /* A tinted fill would lighten the ground under the red text, so hover only
+     firms up the border and the contrast stays what it was. */
+  .btn-delete-all:hover:not(:disabled){ border-color:var(--danger); }
   .swatches{
     display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-bottom:12px;
   }
@@ -871,8 +874,6 @@
   .theme-light .word-row .box-select, .theme-light .undo-row, .theme-light .stat-tile,
   .theme-light .sync-code, .theme-light .sync-input{ background:rgba(0,0,0,0.05); }
   .theme-light .deck-item:hover, .theme-light .btn-secondary:hover{ background:rgba(0,0,0,0.08); }
-  .theme-light .btn-delete-all{ border-color:rgba(154,69,50,0.45); color:var(--brick); }
-  .theme-light .btn-delete-all:hover{ background:rgba(154,69,50,0.08); }
   .theme-light body.has-image::before{ background:rgba(250,248,244,0.62); }
   .theme-light .card{
     box-shadow:0 0 0 1px rgba(0,0,0,0.10), 0 2px 10px rgba(0,0,0,0.07), 0 14px 0 -6px rgba(0,0,0,0.10);
@@ -1081,18 +1082,19 @@ const DECK_NAME_MAX = 40;
 // panel, the lightest surface it sits on, so it must reach 4.5:1 against
 // `panel`. On a light theme the darkest surface is the faint well inside a
 // panel, so `soft` and `accent` must reach 4.5:1 against that, and white
-// text on `accent` must too.
+// text on `accent` must too. `danger` is the red text on a panel, given only
+// where the default #E0868E falls short of 4.5:1.
 const THEMES = [
   {id:'slate',  key:'thSlate',  bg:'#182027', panel:'#202A32', accent:'#C99A3E', soft:'#8A97A3'},
   {id:'night',  key:'thNight',  bg:'#101014', panel:'#1A1A22', accent:'#8B7FD4', soft:'#8A97A3'},
   {id:'forest', key:'thForest', bg:'#16241C', panel:'#1F3028', accent:'#7FB069', soft:'#8A97A3'},
   {id:'plum',   key:'thPlum',   bg:'#221826', panel:'#2E2134', accent:'#D48FB8', soft:'#8A97A3'},
-  {id:'sand',   key:'thSand',   bg:'#4A4030', panel:'#584D3B', accent:'#E8C468', soft:'#BBC3CA'},
+  {id:'sand',   key:'thSand',   bg:'#4A4030', panel:'#584D3B', accent:'#E8C468', soft:'#BBC3CA', danger:'#FACCCF'},
   {id:'ocean',  key:'thOcean',  bg:'#132836', panel:'#1C3544', accent:'#5FB3CE', soft:'#909DA8'},
   {id:'wine',   key:'thWine',   bg:'#2E161B', panel:'#3C2027', accent:'#E0868E', soft:'#8A97A3'},
   {id:'coal',   key:'thCoal',   bg:'#1E1E1E', panel:'#292929', accent:'#B8B8B8', soft:'#8A97A3'},
-  {id:'paper',  key:'thPaper',  bg:'#F3EEE3', panel:'#FBF8F1', accent:'#7F510A', soft:'#6A6255', light:true},
-  {id:'mist',   key:'thMist',   bg:'#E8EBEE', panel:'#F6F7F9', accent:'#2C6188', soft:'#56616B', light:true}
+  {id:'paper',  key:'thPaper',  bg:'#F3EEE3', panel:'#FBF8F1', accent:'#7F510A', soft:'#6A6255', danger:'#9A4532', light:true},
+  {id:'mist',   key:'thMist',   bg:'#E8EBEE', panel:'#F6F7F9', accent:'#2C6188', soft:'#56616B', danger:'#9A4532', light:true}
 ];
 // Auto is stored like a theme id but resolves to one of these two from the
 // device's light/dark setting, and follows it when it changes.
@@ -2275,6 +2277,7 @@ function applyTheme(){
   root.setProperty('--panel', theme.panel);
   root.setProperty('--accent', theme.accent);
   root.setProperty('--soft', theme.soft);
+  root.setProperty('--danger', theme.danger || '#E0868E');
   document.documentElement.classList.toggle('theme-light', !!theme.light);
   document.querySelector('meta[name="theme-color"]').setAttribute('content', theme.bg);
   if(bgImage){

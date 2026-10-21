@@ -323,6 +323,7 @@
   }
   .speak-btn:hover{ background:rgba(128,128,128,0.15); color:var(--card-ink); }
   .speak-btn.speaking{ color:var(--accent); }
+  .speak-btn[hidden]{ display:none; }
   .speak-btn svg{ width:20px; height:20px; }
   .card-body{
     padding:44px 28px 30px;
@@ -452,6 +453,7 @@
   .deck-settings .btn-delete-all{ align-self:flex-start; margin-top:4px; }
   .btn-delete-all:disabled{ opacity:.45; cursor:default; }
   .deck-note{ font-size:11.5px; color:var(--soft); margin:0; line-height:1.45; }
+  .deck-voice-note{ padding:8px 10px; border-radius:6px; background:rgba(0,0,0,0.22); }
   .add-panel p, .theme-panel p{ font-size:12px; color:var(--soft); margin:0 0 10px; line-height:1.5; }
   textarea{
     width:100%; min-height:120px; background:rgba(0,0,0,0.28); color:var(--paper);
@@ -897,7 +899,6 @@
   <div class="mode-chips anim-2">
     <button class="chip" id="dirChip">Direction: word → translation</button>
     <button class="chip" id="typeChip">Typing: off</button>
-    <button class="chip" id="voiceChip">Voice: American</button>
     <button class="chip" id="viewChip">View: Cards</button>
   </div>
 
@@ -993,7 +994,7 @@ isolation — изоляция"></textarea>
       <legend data-i18n="joinSettingsLegend">Appearance &amp; settings</legend>
       <label class="share-toggle"><input type="checkbox" id="joinShare" checked>
         <span data-i18n="shareSettings">Use the same theme and settings on all devices</span></label>
-      <p class="share-note" data-i18n="shareSettingsNote">Theme, card color, language, voice, direction and typing. Background images and card photos stay on each device.</p>
+      <p class="share-note" data-i18n="shareSettingsNote">Theme, card color, language, direction and typing. Background images and card photos stay on each device.</p>
     </fieldset>
     <div class="join-actions">
       <button class="btn-parse" id="joinGo" data-i18n="syncConnect">Connect</button>
@@ -1097,7 +1098,6 @@ const I18N = {
       tabLearn: 'Learn', tabReview: 'Review', tabQuiz: 'Quiz', tabMatch: 'Match',
       dirNormal: 'Direction: word → translation', dirReverse: 'Direction: translation → word',
       typingOn: 'Typing: on', typingOff: 'Typing: off',
-      voiceUS: 'Voice: American', voiceGB: 'Voice: British',
       viewCards: 'View: Cards', viewList: 'View: List',
 
       stStreak: 'day streak', stToday: 'reviews today', stWeek: 'this week',
@@ -1111,6 +1111,13 @@ const I18N = {
       deletedDeck: 'Deleted deck {name}', deckLastNote: 'Your only deck can’t be deleted.',
       deckNameEmpty: 'Give the deck a name.', deckNameTaken: 'You already have a deck with that name.',
       decksCombined: 'Two decks named “{name}” were combined into one.', deckRecovered: 'Recovered deck',
+      voiceMissing: 'This device has no {lang} voice, so the speaker is hidden in this deck.',
+      voiceHowIos: 'To add one, go to Settings → Accessibility → Spoken Content → Voices, then reload this page.',
+      voiceHowAndroid: 'To add one, open Settings, search for “Text-to-speech”, open the engine’s settings and install the voice data, then reload this page.',
+      voiceHowWindows: 'To add one, go to Settings → Time & language → Speech → Add voices, then reload this page.',
+      voiceHowMac: 'To add one, go to System Settings → Accessibility → Spoken Content → System voice → Manage Voices, then reload this page.',
+      voiceHowOther: 'To add one, look in your system’s speech or text-to-speech settings, then reload this page.',
+      noSpeech: 'This browser can’t read words aloud, so the speaker is hidden.',
       exportBtn: 'Export backup', importBtn: 'Import',
       backupDone: 'Backup downloaded.',
       backupBad: 'Could not read that file. Is it a Vocab Box backup?',
@@ -1140,7 +1147,7 @@ const I18N = {
       joinReplaceConfirm: 'Remove {n} from this device? A backup file of them downloads first.',
       joinSettingsLegend: 'Appearance & settings',
       shareSettings: 'Use the same theme and settings on all devices',
-      shareSettingsNote: 'Theme, card color, language, voice, direction and typing. Background images and card photos stay on each device.',
+      shareSettingsNote: 'Theme, card color, language, direction and typing. Background images and card photos stay on each device.',
 
       themeBg: 'Background — pick a theme, or upload your own image.',
       themeCard: 'Card color — pick one, choose your own, or use a photo.',
@@ -1235,7 +1242,6 @@ const I18N = {
       tabLearn: 'Учить', tabReview: 'Повтор', tabQuiz: 'Тест', tabMatch: 'Пары',
       dirNormal: 'Направление: слово → перевод', dirReverse: 'Направление: перевод → слово',
       typingOn: 'Ввод: вкл', typingOff: 'Ввод: выкл',
-      voiceUS: 'Голос: американский', voiceGB: 'Голос: британский',
       viewCards: 'Вид: карточки', viewList: 'Вид: список',
 
       stStreak: 'дней подряд', stToday: 'повторов сегодня', stWeek: 'за неделю',
@@ -1249,6 +1255,13 @@ const I18N = {
       deletedDeck: 'Набор {name} удалён', deckLastNote: 'Единственный набор нельзя удалить.',
       deckNameEmpty: 'Введите название набора.', deckNameTaken: 'Набор с таким названием уже есть.',
       decksCombined: 'Два набора «{name}» объединены в один.', deckRecovered: 'Восстановленный набор',
+      voiceMissing: 'На этом устройстве нет голоса для языка «{lang}», поэтому в этом наборе кнопки озвучки нет.',
+      voiceHowIos: 'Чтобы добавить голос, откройте Настройки → Универсальный доступ → Устный контент → Голоса и перезагрузите эту страницу.',
+      voiceHowAndroid: 'Чтобы добавить голос, откройте Настройки, найдите «Синтез речи», откройте настройки движка и установите голосовые данные, затем перезагрузите эту страницу.',
+      voiceHowWindows: 'Чтобы добавить голос, откройте Параметры → Время и язык → Речь → Добавить голоса и перезагрузите эту страницу.',
+      voiceHowMac: 'Чтобы добавить голос, откройте Системные настройки → Универсальный доступ → Устный контент → Системный голос → Управлять голосами и перезагрузите эту страницу.',
+      voiceHowOther: 'Чтобы добавить голос, загляните в системные настройки речи или синтеза речи и перезагрузите эту страницу.',
+      noSpeech: 'Этот браузер не умеет читать слова вслух, поэтому кнопки озвучки нет.',
       exportBtn: 'Скачать копию', importBtn: 'Загрузить',
       backupDone: 'Резервная копия скачана.',
       backupBad: 'Не удалось прочитать файл. Это резервная копия Vocab Box?',
@@ -1278,7 +1291,7 @@ const I18N = {
       joinReplaceConfirm: 'Удалить с этого устройства {n}? Сначала скачается их резервная копия.',
       joinSettingsLegend: 'Оформление и настройки',
       shareSettings: 'Одинаковые тема и настройки на всех устройствах',
-      shareSettingsNote: 'Тема, цвет карточек, язык, голос, направление и ввод. Фоновые изображения и фото на карточках у каждого устройства свои.',
+      shareSettingsNote: 'Тема, цвет карточек, язык, направление и ввод. Фоновые изображения и фото на карточках у каждого устройства свои.',
 
       themeBg: 'Фон — выберите тему или загрузите своё изображение.',
       themeCard: 'Цвет карточки — выберите готовый, свой или фото.',
@@ -1375,7 +1388,6 @@ const I18N = {
       tabLearn: 'Oʻrganish', tabReview: 'Takror', tabQuiz: 'Test', tabMatch: 'Juftlik',
       dirNormal: 'Yoʻnalish: soʻz → tarjima', dirReverse: 'Yoʻnalish: tarjima → soʻz',
       typingOn: 'Yozish: yoniq', typingOff: 'Yozish: oʻchiq',
-      voiceUS: 'Ovoz: amerikacha', voiceGB: 'Ovoz: britancha',
       viewCards: 'Koʻrinish: kartochka', viewList: 'Koʻrinish: roʻyxat',
 
       stStreak: 'kun ketma-ket', stToday: 'bugungi takrorlar', stWeek: 'shu hafta',
@@ -1389,6 +1401,13 @@ const I18N = {
       deletedDeck: '{name} toʻplami oʻchirildi', deckLastNote: 'Yagona toʻplamni oʻchirib boʻlmaydi.',
       deckNameEmpty: 'Toʻplamga nom bering.', deckNameTaken: 'Bunday nomli toʻplam allaqachon bor.',
       decksCombined: 'Ikkita «{name}» toʻplami bittaga birlashtirildi.', deckRecovered: 'Tiklangan toʻplam',
+      voiceMissing: 'Bu qurilmada «{lang}» tili uchun ovoz yoʻq, shuning uchun bu toʻplamda ovoz tugmasi koʻrsatilmaydi.',
+      voiceHowIos: 'Ovoz qoʻshish uchun Settings → Accessibility → Spoken Content → Voices boʻlimiga kiring, soʻng sahifani qayta yuklang.',
+      voiceHowAndroid: 'Ovoz qoʻshish uchun Sozlamalarda «Text-to-speech» (nutq sintezi) ni qidiring, dvigatel sozlamalarini oching va ovoz maʼlumotlarini oʻrnating, soʻng sahifani qayta yuklang.',
+      voiceHowWindows: 'Ovoz qoʻshish uchun Settings → Time & language → Speech → Add voices boʻlimiga kiring, soʻng sahifani qayta yuklang.',
+      voiceHowMac: 'Ovoz qoʻshish uchun System Settings → Accessibility → Spoken Content → System voice → Manage Voices boʻlimiga kiring, soʻng sahifani qayta yuklang.',
+      voiceHowOther: 'Ovoz qoʻshish uchun tizimning nutq yoki nutq sintezi sozlamalariga qarang, soʻng sahifani qayta yuklang.',
+      noSpeech: 'Bu brauzer soʻzlarni ovoz chiqarib oʻqiy olmaydi, shuning uchun ovoz tugmasi koʻrsatilmaydi.',
       exportBtn: 'Zaxira nusxa', importBtn: 'Yuklash',
       backupDone: 'Zaxira nusxa yuklab olindi.',
       backupBad: 'Faylni oʻqib boʻlmadi. Bu Vocab Box zaxira nusxasimi?',
@@ -1418,7 +1437,7 @@ const I18N = {
       joinReplaceConfirm: 'Bu qurilmadan {n} oʻchirilsinmi? Avval ularning zaxira fayli yuklab olinadi.',
       joinSettingsLegend: 'Dizayn va sozlamalar',
       shareSettings: 'Barcha qurilmalarda bir xil mavzu va sozlamalar',
-      shareSettingsNote: 'Mavzu, kartochka rangi, til, ovoz, yoʻnalish va yozish. Fon rasmlari va kartochkadagi rasmlar har bir qurilmada alohida qoladi.',
+      shareSettingsNote: 'Mavzu, kartochka rangi, til, yoʻnalish va yozish. Fon rasmlari va kartochkadagi rasmlar har bir qurilmada alohida qoladi.',
 
       themeBg: 'Fon — mavzu tanlang yoki oʻz rasmingizni yuklang.',
       themeCard: 'Kartochka rangi — tayyorini tanlang, oʻzingiznikini kiriting yoki rasm qoʻying.',
@@ -1964,7 +1983,8 @@ function voiceLabel(tag){
 }
 function voiceOptions(selected){
   const loc = langTag(lang);
-  return [...new Set(VOICE_LANGS.concat([selected]))]
+  const installed = voiceList.map(v => String(v.lang || '').replace(/_/g, '-')).filter(l => /^[a-z]{2,3}-[A-Z]{2}$/.test(l));
+  return [...new Set(VOICE_LANGS.concat(installed, [selected]))]
     .map(tag => ({tag, label: voiceLabel(tag)}))
     .sort((a,b)=> a.label.localeCompare(b.label, loc))
     .map(o => '<option value="' + o.tag + '"' + (o.tag === selected ? ' selected' : '') + '>' + escapeHtml(o.label) + '</option>')
@@ -2027,6 +2047,7 @@ function renderDeckPanel(){
       '<input class="deck-input" id="deckNameInput" type="text" dir="auto" maxlength="' + DECK_NAME_MAX + '" autocomplete="off" lang="' + d.voice + '"></label>' +
     '<label class="deck-field"><span>' + t('deckVoice') + '</span>' +
       '<select class="deck-select" id="deckVoiceSelect">' + voiceOptions(d.voice) + '</select></label>' +
+    '<p class="deck-note deck-voice-note" id="deckVoiceNote" hidden></p>' +
     '<button class="btn-delete-all" id="deleteDeckBtn"' + (decks.length < 2 ? ' disabled' : '') + '>' + t('deleteDeck') + '</button>' +
     (decks.length < 2 ? '<p class="deck-note">' + t('deckLastNote') + '</p>' : '') +
   '</div>';
@@ -2076,6 +2097,33 @@ function renderDeckPanel(){
     renderDeckPanel();
   });
   on('deleteDeckBtn', ()=> deleteDeck(d.id));
+  updateVoiceNote();
+}
+
+// Which settings app to point at for installing a voice.
+function voiceHelpKey(){
+  const ua = navigator.userAgent || '';
+  if(/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'voiceHowIos';
+  if(/Android/.test(ua)) return 'voiceHowAndroid';
+  if(/Windows/.test(ua)) return 'voiceHowWindows';
+  if(/Macintosh/.test(ua)) return 'voiceHowMac';
+  return 'voiceHowOther';
+}
+// Explains a hidden speaker: no voice for this deck's language, or no speech
+// in this browser at all.
+function updateVoiceNote(){
+  const el = document.getElementById('deckVoiceNote');
+  if(!el) return;
+  const tag = curDeck().voice;
+  if(!('speechSynthesis' in window)){
+    el.textContent = t('noSpeech');
+    el.hidden = false;
+  } else if(!canSpeak(tag)){
+    el.textContent = t('voiceMissing', {lang: voiceLabel(tag)}) + ' ' + t(voiceHelpKey());
+    el.hidden = false;
+  } else {
+    el.hidden = true;
+  }
 }
 
 function todayKey(offsetDays){
@@ -2291,26 +2339,64 @@ function handleCardImageUpload(file){
 }
 
 let voiceList = [];
+// Some browsers list their voices only after a moment, so the speaker and
+// the deck's voice note are brought up to date whenever the list arrives.
 function refreshVoices(){
   if(!('speechSynthesis' in window)) return;
   voiceList = window.speechSynthesis.getVoices();
+  updateSpeakers();
+  updateVoiceNote();
 }
 if('speechSynthesis' in window){
-  refreshVoices();
+  voiceList = window.speechSynthesis.getVoices();
   window.speechSynthesis.onvoiceschanged = refreshVoices;
 }
 
-function speak(text, btn){
+// A voice's language in lower case with hyphens. Some Android voices report
+// Mandarin as cmn rather than zh.
+function voiceLangOf(v){
+  return String(v.lang || '').replace(/_/g, '-').toLowerCase().replace(/^cmn(?=-|$)/, 'zh');
+}
+// The installed voice for a language tag: the same language and region if
+// there is one, else the same language from another region. Mandarin never
+// falls back to a Cantonese voice (zh-HK, zh-MO, yue), which would read the
+// words in a different language.
+function pickVoice(tag){
+  const want = tag.toLowerCase(), base = want.split('-')[0];
+  const cantonese = l => /^yue(-|$)/.test(l) || /^zh-(hk|mo|yue)(-|$)/.test(l);
+  return voiceList.find(v => voiceLangOf(v) === want) ||
+    voiceList.find(v => {
+      const l = voiceLangOf(v);
+      return l.split('-')[0] === base && cantonese(l) === cantonese(want);
+    }) || null;
+}
+// Whether to offer the speaker for a language. Until the browser has listed
+// its voices there is no telling, so the speaker stays.
+function canSpeak(tag){
+  if(!('speechSynthesis' in window)) return false;
+  return voiceList.length === 0 || !!pickVoice(tag);
+}
+function deckVoice(deckId){
+  const d = deckById(deckId);
+  return d ? d.voice : curDeck().voice;
+}
+// The speaker buttons are built with the card and shown or hidden here, so
+// voices arriving late never re-render a card that is half typed.
+function updateSpeakers(){
+  ['speakBtn', 'learnSpeak'].forEach(id=>{
+    const b = document.getElementById(id);
+    if(b) b.hidden = !canSpeak(curDeck().voice);
+  });
+}
+
+function speak(text, btn, tag){
   if(!('speechSynthesis' in window)) return;
   const synth = window.speechSynthesis;
-  if(voiceList.length === 0) refreshVoices();
+  if(voiceList.length === 0) voiceList = synth.getVoices();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = settings.voice;
+  u.lang = tag;
   u.rate = 0.9;
-  const want = settings.voice.toLowerCase();
-  const match =
-    voiceList.find(v => (v.lang||'').replace('_','-').toLowerCase() === want) ||
-    voiceList.find(v => (v.lang||'').replace('_','-').toLowerCase().startsWith(want));
+  const match = pickVoice(tag);
   if(match) u.voice = match;
   if(btn){
     btn.classList.add('speaking');
@@ -2884,7 +2970,8 @@ function renderLearn(){
   stage.appendChild(wrap);
 
   const sp = wrap.querySelector('#learnSpeak');
-  if(sp) sp.addEventListener('click', ()=>speak(c.word, sp));
+  if(sp) sp.addEventListener('click', ()=>speak(c.word, sp, deckVoice(c.deck)));
+  updateSpeakers();
   wrap.querySelector('#learnPrev').addEventListener('click', ()=>{ learnIdx--; renderLearn(); });
   wrap.querySelector('#learnNext').addEventListener('click', ()=>{ learnIdx++; renderLearn(); });
   wrap.querySelector('#learnKnow').addEventListener('click', ()=>introduce(c, 3));
@@ -3191,7 +3278,8 @@ function renderCard(animateIn){
   renderCardBody(body);
 
   const sb = card.querySelector('#speakBtn');
-  if(sb) sb.addEventListener('click', ()=>{ speak(current.word, sb); });
+  if(sb) sb.addEventListener('click', ()=>{ speak(current.word, sb, deckVoice(current.deck)); });
+  updateSpeakers();
 
   card.addEventListener('click', (e)=>{
     if(e.target.closest('button') || e.target.closest('input')) return;
@@ -3306,9 +3394,6 @@ function renderChips(){
   const typ = document.getElementById('typeChip');
   typ.textContent = settings.typing ? t('typingOn') : t('typingOff');
   typ.classList.toggle('on', settings.typing);
-  const vc = document.getElementById('voiceChip');
-  vc.textContent = settings.voice === 'en-GB' ? t('voiceGB') : t('voiceUS');
-  vc.classList.toggle('on', settings.voice === 'en-GB');
   const vw = document.getElementById('viewChip');
   vw.textContent = settings.learnView === 'list' ? t('viewList') : t('viewCards');
   vw.classList.toggle('on', settings.learnView === 'list');
@@ -3381,12 +3466,6 @@ document.getElementById('bgFile').addEventListener('change', (e)=>{
 
 document.querySelectorAll('.tab-btn').forEach(b=>{
   b.addEventListener('click', ()=>setMode(b.dataset.mode));
-});
-
-document.getElementById('voiceChip').addEventListener('click', ()=>{
-  settings.voice = settings.voice === 'en-US' ? 'en-GB' : 'en-US';
-  noteSettingsChange();
-  renderChips();
 });
 
 document.getElementById('cardUploadBtn').addEventListener('click', ()=>{
@@ -3800,7 +3879,6 @@ function localSettingsUnit(){
     lang: lang,
     theme: THEMES.some(th => th.id === theme) ? theme : 'slate',
     typing: !!settings.typing,
-    voice: settings.voice === 'en-GB' ? 'en-GB' : 'en-US',
     changedAt: +settings.sharedChangedAt || 0
   };
 }
@@ -3815,7 +3893,7 @@ function readSettingsUnit(x){
   if(typeof x.lang === 'string' && I18N[x.lang]) u.lang = x.lang;
   if(THEMES.some(th => th.id === x.theme)) u.theme = x.theme;
   if(typeof x.typing === 'boolean') u.typing = x.typing;
-  if(x.voice === 'en-US' || x.voice === 'en-GB') u.voice = x.voice;
+  // Voice used to be shared here; it belongs to each deck now and syncs with it.
   u.changedAt = +x.changedAt;
   return u;
 }
@@ -3846,7 +3924,6 @@ function applySharedSettings(u){
   if(u.cardColor){ localStorage.setItem(CARD_KEY, u.cardColor); applyCardColor(); }
   if(u.direction) settings.direction = u.direction;
   if(typeof u.typing === 'boolean') settings.typing = u.typing;
-  if(u.voice) settings.voice = u.voice;
   settings.sharedChangedAt = u.changedAt;
   saveSettings();
   if(study){ flipped = false; answered = false; lastAnswerCorrect = null; }

@@ -25,7 +25,7 @@ Answer **Good** and the word moves up a box, so you see it less often. Answer **
 
 **Studying**
 - Five-box Leitner spaced repetition
-- Pronunciation audio with a choice of American or British accent
+- Pronunciation audio in each deck's own language, using a voice installed on your device; if a deck's language has none, the deck's settings say how to add one
 - Reverse direction — practice word → translation, or translation → word
 - Typing mode — type the answer instead of flipping, with spelling check
 - Practice mode — keep reviewing when nothing is due, without affecting your boxes
@@ -60,7 +60,7 @@ Answer **Good** and the word moves up a box, so you see it less often. Answer **
 
 Your words are stored in your own browser and stay on your device unless you turn on sync. There is no account to create.
 
-**If you turn on sync**, your decks — their names and voice languages, and their words, translations, box progress and review counts — are stored in a [Supabase](https://supabase.com) database so your other devices can reach it. It is filed under a SHA-256 hash of your sync code; the code itself is never stored, and no account or personal details are attached. Anyone who has your code can read and change your synced decks, so keep it to yourself. If the device also shares appearance and settings (on by default), your theme, card color, interface language, voice, direction and typing mode are synced too. Background images and card photos always stay on the device. Stopping sync keeps your words on that device, and the synced copy stays online for your other devices.
+**If you turn on sync**, your decks — their names and voice languages, and their words, translations, box progress and review counts — are stored in a [Supabase](https://supabase.com) database so your other devices can reach it. It is filed under a SHA-256 hash of your sync code; the code itself is never stored, and no account or personal details are attached. Anyone who has your code can read and change your synced decks, so keep it to yourself. If the device also shares appearance and settings (on by default), your theme, card color, interface language, direction and typing mode are synced too. Background images and card photos always stay on the device. Stopping sync keeps your words on that device, and the synced copy stays online for your other devices.
 
 The site uses [GoatCounter](https://www.goatcounter.com) for anonymous visit counts, which sets no cookies and collects no personal data.
 

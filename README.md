@@ -68,7 +68,7 @@ The site uses [GoatCounter](https://www.goatcounter.com) for anonymous visit cou
 
 `index.html` is the entire app — no build step, no dependencies. Download it and open it in any browser, or fork this repo and enable GitHub Pages to host your own copy.
 
-Sync talks to this project's Supabase backend. To run your own, create a Supabase project, run [`supabase/schema.sql`](supabase/schema.sql) in its SQL editor (and optionally [`supabase/verify.sql`](supabase/verify.sql) to check it), then set `SUPABASE_URL` and `SUPABASE_KEY` in `index.html` to your project's URL and publishable key. [`.github/workflows/supabase-keepalive.yml`](.github/workflows/supabase-keepalive.yml) calls the API every three days so a free project isn't paused for inactivity.
+Sync talks to this project's Supabase backend. To run your own, create a Supabase project, run [`supabase/schema.sql`](supabase/schema.sql) in its SQL editor (and optionally [`supabase/verify.sql`](supabase/verify.sql) to check it), then set `SUPABASE_URL` and `SUPABASE_KEY` in `index.html` to your project's URL and publishable key. [`.github/workflows/supabase-keepalive.yml`](.github/workflows/supabase-keepalive.yml) calls the API every 6 hours so a free project isn't paused for inactivity.
 
 ## Feedback
 

@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vocab Box merge tests</title>
+<style>
+  :root{
+    --bg:#F6F7F9; --panel:#FFFFFF; --ink:#1F262D; --soft:#56616B; --line:#D9DEE3;
+    --pass:#2D6A4F; --pass-bg:#E3F1E8; --fail:#9A2D2D; --fail-bg:#F6E1E1;
+    --accent:#2C6188;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#182027; --panel:#202A32; --ink:#EFEAD9; --soft:#A3AEB8; --line:#33414D;
+      --pass:#8FD3AE; --pass-bg:#1E3A2D; --fail:#F2A7A7; --fail-bg:#4A2626;
+      --accent:#7FB4DA;
+    }
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; padding:24px 16px 48px; background:var(--bg); color:var(--ink);
+    font:14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main{ max-width:760px; margin:0 auto; }
+  h1{ font-size:22px; margin:0 0 4px; }
+  h2{ font-size:15px; margin:24px 0 8px; }
+  p{ margin:0 0 10px; color:var(--soft); }
+  code{ font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12.5px; }
+  .controls{
+    display:flex; flex-wrap:wrap; gap:10px; align-items:end;
+    background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px; margin:16px 0;
+  }
+  label{ display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--soft); }
+  input{
+    width:130px; padding:8px 10px; border:1px solid var(--line); border-radius:6px;
+    background:var(--bg); color:var(--ink); font:inherit;
+  }
+  button{
+    padding:9px 18px; border:0; border-radius:6px; background:var(--accent); color:var(--bg);
+    font:inherit; font-weight:600; cursor:pointer;
+  }
+  button:disabled{ opacity:.5; cursor:default; }
+  #summary{ font-size:16px; font-weight:600; margin:0 0 8px; color:var(--ink); }
+  #summary.pass{ color:var(--pass); }
+  #summary.fail{ color:var(--fail); }
+  #source{ font-size:12.5px; }
+  ul{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+  li{
+    background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 12px;
+    display:grid; grid-template-columns:auto 1fr; gap:2px 10px; align-items:baseline;
+  }
+  .badge{ font-size:11px; font-weight:700; letter-spacing:.5px; padding:2px 7px; border-radius:4px; }
+  .badge.pass{ background:var(--pass-bg); color:var(--pass); }
+  .badge.fail{ background:var(--fail-bg); color:var(--fail); }
+  .name{ font-weight:600; }
+  .detail{ grid-column:2; color:var(--soft); font-size:12.5px; white-space:pre-wrap; word-break:break-word; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Vocab Box merge tests</h1>
+  <p>Scenario tests and a seeded fuzzer for the sync merge. The functions under test are read from
+    <code>../index.html</code> by name and run on their own, so the app itself never starts here and
+    nothing in this browser's saved words or sync is touched.</p>
+  <p>Open this page over http(s), for example on GitHub Pages or with
+    <code>python3 -m http.server</code> in the repo root. Browsers don't let a page opened as a
+    <code>file://</code> read the file next to it.</p>
+
+  <div class="controls">
+    <label>Seed <input id="seed" type="number" value="20261021"></label>
+    <label>Histories <input id="histories" type="number" value="500" min="1"></label>
+    <label>Steps per history <input id="steps" type="number" value="60" min="1"></label>
+    <button id="run">Run tests</button>
+  </div>
+
+  <div id="summary">Not run yet.</div>
+  <p id="source"></p>
+
+  <h2>Scenarios</h2>
+  <ul id="scenarios"></ul>
+
+  <h2>Fuzzer</h2>
+  <ul id="fuzz"></ul>
+  <p id="fuzzNote"></p>
+</main>
+
+<script>
+'use strict';
+
+/* ---------- Loading the real functions ---------- */
+
+// Everything the merge needs, by name. Each is a top-level `function` or
+// `const` in index.html; a missing one fails the run rather than being stubbed.
+const NEEDED = [
+  'DAY', 'TOMBSTONE_TTL', 'DEFAULT_DECK', 'DEFAULT_DECK_NAME', 'DECK_NAME_MAX', 'THEMES',
+  'AUTO_THEME', 'isThemeId', 'I18N', 'normWord', 'cardKey', 'DECK_ID_RE', 'deckIdOr',
+  'cleanDeckName', 'deckNameKey', 'cleanVoice', 'readDeckEntry', 'readDeckTombstone',
+  'syncCard', 'readDeck', 'cardSig', 'entryWins', 'deckEntryWins', 'mergeDecks', 'emptyDeck',
+  'readSettingsUnit', 'pickSettings'
+];
+const EXPORTS = ['mergeDecks', 'readDeck', 'emptyDeck', 'normWord', 'cardKey', 'deckNameKey', 'TOMBSTONE_TTL'];
+
+function balanced(line){
+  let n = 0;
+  for(const ch of line){
+    if('{[('.includes(ch)) n++;
+    else if('}])'.includes(ch)) n--;
+  }
+  return n === 0;
+}
+
+// index.html keeps top-level declarations at column 0, and a multi-line one
+// ends at the first column-0 line that closes it ("}", "};" or "];").
+function extract(lines, name){
+  const start = lines.findIndex(l => l.startsWith('function ' + name + '(') || l.startsWith('const ' + name + ' ='));
+  if(start === -1) throw new Error(name + ' was not found in index.html');
+  if(balanced(lines[start])) return {start, code: lines[start]};
+  for(let i = start + 1; i < lines.length; i++){
+    if(/^[}\]];?\s*$/.test(lines[i])) return {start, code: lines.slice(start, i + 1).join('\n')};
+  }
+  throw new Error('The end of ' + name + ' was not found in index.html');
+}
+
+async function loadMerge(){
+  const res = await fetch('../index.html', {cache: 'no-store'});
+  if(!res.ok) throw new Error('Could not load ../index.html (HTTP ' + res.status + ')');
+  const html = await res.text();
+  const lines = html.split('\n');
+  // Declared in the order index.html declares them, so constants that use
+  // other constants (TOMBSTONE_TTL uses DAY) see them defined.
+  const blocks = NEEDED.map(n => extract(lines, n)).sort((a, b) => a.start - b.start);
+  const body = blocks.map(b => b.code).join('\n') + '\nreturn {' + EXPORTS.join(', ') + '};';
+  const api = new Function(body)();
+  let hash = '';
+  if(window.crypto && crypto.subtle){
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(html));
+    hash = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 12);
+  }
+  return {api, lines: lines.length, hash};
+}
+
+/* ---------- Helpers ---------- */
+
+const MIN = 60000;
+const T0 = Date.UTC(2026, 9, 1);
+const at = n => T0 + n * MIN;          // n minutes after the start
+const J = x => JSON.stringify(x);
+
+class Fail extends Error {}
+function expect(cond, msg){ if(!cond) throw new Fail(msg); }
+
+const K1 = 'k0000000001', K2 = 'k0000000002', K3 = 'k0000000003';
+
+function deck(id, name, changedAt = 0, activeAt = 0, voice = 'en-US'){
+  return {id, name, voice, changedAt, activeAt};
+}
+function deckTomb(id, name, changedAt, activeAt = 0, voice = 'en-US'){
+  return {id, name, voice, changedAt, activeAt, deleted: true};
+}
+function card(deck, word, translation, box, changedAt, extra = {}){
+  return Object.assign({deck, word, translation, box, seen: box > 1, due: 0, changedAt}, extra);
+}
+function tomb(deck, word, changedAt){ return {deck, word, changedAt, deleted: true}; }
+
+/* ---------- Scenarios ---------- */
+
+function scenarios(M){
+  const {mergeDecks, readDeck, emptyDeck, normWord} = M;
+  const NOW = at(10000);
+  const data = (o) => readDeck(Object.assign({format: 2, decks: [deck('default', 'IELTS')], deckTombstones: [],
+                                              cards: [], tombstones: [], activity: {}, settings: null}, o));
+  // Merges both ways round, checks the two agree, and returns the result.
+  const both = (a, b, now = NOW) => {
+    const x = mergeDecks(a, b, now), y = mergeDecks(b, a, now);
+    expect(J(x) === J(y), 'merge(a, b) and merge(b, a) differ');
+    return x;
+  };
+  const findCard = (d, deckId, word) => d.cards.find(c => c.deck === deckId && normWord(c.word) === normWord(word));
+  const findTomb = (d, deckId, word) => d.tombstones.find(t => t.deck === deckId && t.word === normWord(word));
+  const activeDeck = (d, id) => d.decks.find(x => x.id === id);
+
+  return [
+    ['A demotion survives a higher box elsewhere', ()=>{
+      // B moved the word up to box 5; A later answered Again, sending it to box 1.
+      const a = data({cards: [card('default', 'abundant', 'обильный', 1, at(20))]});
+      const b = data({cards: [card('default', 'abundant', 'обильный', 5, at(10))]});
+      const m = both(a, b);
+      expect(findCard(m, 'default', 'abundant').box === 1, 'expected box 1, got box ' + findCard(m, 'default', 'abundant').box);
+      // A copy from before sync carries no history, so it can't undo the demotion either.
+      const old = data({cards: [card('default', 'abundant', 'обильный', 5, 0)]});
+      expect(findCard(both(m, old), 'default', 'abundant').box === 1, 'a pre-sync box 5 copy overrode the demotion');
+    }],
+
+    ['A deletion spreads instead of coming back', ()=>{
+      const a = data({tombstones: [tomb('default', 'feasible', at(30))]});
+      const b = data({cards: [card('default', 'feasible', 'осуществимый', 3, at(10)), card('default', 'viable', 'жизнеспособный', 2, at(10))]});
+      const m = both(a, b);
+      expect(!findCard(m, 'default', 'feasible'), 'the deleted word is still there');
+      expect(findTomb(m, 'default', 'feasible'), 'the tombstone was lost');
+      expect(findCard(m, 'default', 'viable'), 'an unrelated word was lost');
+      // Syncing with the device that still has the old copy doesn't bring it back.
+      expect(!findCard(both(m, b), 'default', 'feasible'), 'the old copy brought the word back');
+      // Adding the word on a device that never saw the deletion gives it no
+      // history (changedAt 0), so it stays deleted ...
+      const added = data({cards: [card('default', 'feasible', 'осуществимый', 1, 0)]});
+      expect(!findCard(both(m, added), 'default', 'feasible'), 'a history-less re-add beat the deletion');
+      // ... but re-adding it on the device that deleted it is a fresh edit, and wins.
+      const readded = data({cards: [card('default', 'feasible', 'осуществимый', 1, at(40))]});
+      const r = both(m, readded);
+      expect(findCard(r, 'default', 'feasible') && !findTomb(r, 'default', 'feasible'), 'a deliberate re-add lost to the deletion');
+      // An edit at the very same moment as the deletion loses to it.
+      const sameTime = data({cards: [card('default', 'feasible', 'осуществимый', 4, at(30))]});
+      expect(!findCard(both(m, sameTime), 'default', 'feasible'), 'an edit at the same moment beat the deletion');
+    }],
+
+    ['A deck deletion spreads, taking its cards', ()=>{
+      // B deleted German at minute 50. C added Katze before that and never
+      // synced, so B never saw it.
+      const german = deck(K1, 'German', at(5), at(5), 'de-DE');
+      const a = data({decks: [deck('default', 'IELTS'), german],
+                      cards: [card(K1, 'Haus', 'house', 2, 0), card(K1, 'Hund', 'dog', 1, 0)]});
+      const b = data({deckTombstones: [deckTomb(K1, 'German', at(50), at(5), 'de-DE')],
+                      tombstones: [tomb(K1, 'Haus', at(50)), tomb(K1, 'Hund', at(50))]});
+      const c = data({decks: [deck('default', 'IELTS'), Object.assign({}, german, {activeAt: at(40)})],
+                      cards: [card(K1, 'Haus', 'house', 2, 0), card(K1, 'Katze', 'cat', 1, 0)]});
+      const m = both(both(a, b), c);
+      expect(!activeDeck(m, K1), 'the deleted deck is still active');
+      expect(m.deckTombstones.some(t => t.id === K1), 'the deck tombstone was lost');
+      const left = m.cards.filter(x => x.deck === K1).map(x => x.word);
+      expect(left.length === 0, 'cards left in the deleted deck: ' + left.join(', '));
+      expect(findTomb(m, K1, 'Katze'), 'Katze, which the deleting device never saw, was not deleted');
+    }],
+
+    ['A rename syncs as a rename', ()=>{
+      const a = data({decks: [deck('default', 'IELTS'), deck(K1, 'Deutsch', at(60), at(5), 'de-DE')]});
+      const b = data({decks: [deck('default', 'IELTS'), deck(K1, 'German', at(5), at(5), 'de-DE')],
+                      cards: [card(K1, 'Haus', 'house', 2, at(8))]});
+      const m = both(a, b);
+      const d = activeDeck(m, K1);
+      expect(d && d.name === 'Deutsch', 'expected the deck named Deutsch, got ' + (d ? d.name : 'no deck'));
+      expect(m.decks.length === 2, 'expected 2 decks, got ' + m.decks.length + ': the rename made a copy');
+      expect(findCard(m, K1, 'Haus'), 'the renamed deck lost its card');
+      expect(activeDeck(both(m, b), K1).name === 'Deutsch', 'the old name came back');
+    }],
+
+    ['Same-name decks are combined into one', ()=>{
+      // Two devices each made a German deck before they ever synced.
+      const a = data({decks: [deck('default', 'IELTS'), deck(K2, 'German', at(10), at(10), 'de-DE')],
+                      cards: [card(K2, 'Haus', 'house', 2, at(12)), card(K2, 'Baum', 'tree', 1, 0)]});
+      const b = data({decks: [deck('default', 'IELTS'), deck(K3, 'german ', at(11), at(11), 'de-DE')],
+                      cards: [card(K3, 'Haus', 'house', 4, at(15)), card(K3, 'Hund', 'dog', 1, 0)]});
+      const m = both(a, b);
+      const german = m.decks.filter(d => d.name.trim().toLowerCase() === 'german');
+      expect(german.length === 1 && german[0].id === K2, 'expected one German deck with the lower id, got ' + J(german.map(d => d.id)));
+      const alias = m.deckTombstones.find(t => t.id === K3);
+      expect(alias && alias.mergedInto === K2, 'the other deck did not become an alias of the lower id');
+      const words = m.cards.filter(c => c.deck === K2).map(c => c.word).sort();
+      expect(J(words) === J(['Baum', 'Haus', 'Hund']), 'expected Baum, Haus, Hund in the combined deck, got ' + words.join(', '));
+      expect(findCard(m, K2, 'Haus').box === 4, 'Haus should keep the newer edit (box 4)');
+      expect(!m.cards.some(c => c.deck === K3), 'cards were left in the alias');
+      // A third device still holding the old deck sends Katze to it; the alias moves it.
+      const c = data({decks: [deck('default', 'IELTS'), deck(K3, 'german ', at(11), at(20), 'de-DE')],
+                      cards: [card(K3, 'Katze', 'cat', 1, 0)]});
+      const m2 = both(m, c);
+      expect(findCard(m2, K2, 'Katze'), 'a card arriving for the alias did not move into the combined deck');
+      expect(!activeDeck(m2, K3), 'the alias came back as a deck');
+    }],
+
+    ['A deleted deck comes back if words were added or edited after the deletion', ()=>{
+      const german = deck(K1, 'German', at(5), at(5), 'de-DE');
+      const deleted = data({deckTombstones: [deckTomb(K1, 'German', at(50), at(5), 'de-DE')],
+                            tombstones: [tomb(K1, 'Haus', at(50)), tomb(K1, 'Hund', at(50))]});
+      // Words added after the deletion, on a device that hadn't synced.
+      const added = data({decks: [deck('default', 'IELTS'), Object.assign({}, german, {activeAt: at(70)})],
+                          cards: [card(K1, 'Haus', 'house', 2, 0), card(K1, 'Hund', 'dog', 1, 0), card(K1, 'Katze', 'cat', 1, 0)]});
+      const m = both(deleted, added);
+      expect(activeDeck(m, K1), 'adding words after the deletion did not bring the deck back');
+      expect(findCard(m, K1, 'Katze'), 'the newly added word was lost');
+      expect(!findCard(m, K1, 'Haus') && !findCard(m, K1, 'Hund'), 'words deleted with the deck came back without being edited');
+      // A card edited after the deletion brings the deck back with it.
+      const edited = data({decks: [deck('default', 'IELTS'), german],
+                           cards: [card(K1, 'Haus', 'house', 3, at(70)), card(K1, 'Hund', 'dog', 1, 0)]});
+      const e = both(deleted, edited);
+      expect(activeDeck(e, K1), 'editing a card after the deletion did not bring the deck back');
+      expect(findCard(e, K1, 'Haus') && findCard(e, K1, 'Haus').box === 3, 'the edited card was lost');
+      expect(!findCard(e, K1, 'Hund'), 'an unedited card came back');
+      // Control: activity from before the deletion doesn't revive it.
+      const before = data({decks: [deck('default', 'IELTS'), Object.assign({}, german, {activeAt: at(40)})],
+                           cards: [card(K1, 'Katze', 'cat', 1, 0)]});
+      expect(!activeDeck(both(deleted, before), K1), 'activity from before the deletion brought the deck back');
+    }],
+
+    ['Old-format data merges into the default deck', ()=>{
+      // Format 1: written before decks existed. No format, no decks, and cards,
+      // tombstones and review counts carry no deck.
+      const old = readDeck({
+        cards: [{word: 'abundant', translation: 'обильный', box: 3, seen: true, due: at(1), changedAt: at(5)},
+                {word: ' Viable ', translation: ' жизнеспособный', box: 2, seen: true, due: at(1)}],
+        tombstones: [{word: 'hinder', changedAt: at(6)}],
+        activity: {'2026-10-01': {dev1: 4}}
+      });
+      expect(old.format === 2, 'readDeck did not produce format 2');
+      expect(old.cards.every(c => c.deck === 'default'), 'old cards were not put in the default deck');
+      expect(old.cards.some(c => c.word === 'Viable' && c.translation === 'жизнеспособный'), 'old padded words were not trimmed');
+      const now = data({cards: [card('default', 'abundant', 'обильный', 1, at(20)), card('default', 'hinder', 'препятствовать', 1, 0)],
+                        activity: {'2026-10-02': {'dev2:default': 3}}});
+      const m = both(old, now);
+      expect(m.format === 2, 'the merge did not produce format 2');
+      expect(activeDeck(m, 'default') && activeDeck(m, 'default').name === 'IELTS', 'the default deck was lost or renamed');
+      expect(findCard(m, 'default', 'abundant').box === 1, 'the newer edit lost to the old data');
+      expect(findCard(m, 'default', 'Viable'), 'an old card was lost');
+      expect(!findCard(m, 'default', 'hinder'), 'an old deletion did not spread');
+      expect(m.activity['2026-10-01'].dev1 === 4 && m.activity['2026-10-02']['dev2:default'] === 3, 'review counts were lost');
+      // Malformed entries from the server are dropped without breaking the merge.
+      const junk = readDeck({cards: [null, {word: 1}, {word: 'x', translation: ''}], decks: [{id: 'bad id'}, 7],
+                             tombstones: 'nope', deckTombstones: [{id: K1}], activity: {notADay: {d: 1}}});
+      expect(junk.cards.length === 0 && junk.decks.length === 0 && junk.deckTombstones.length === 0
+             && Object.keys(junk.activity).length === 0, 'malformed entries were kept: ' + J(junk));
+      expect(J(both(m, junk)) === J(mergeDecks(m, emptyDeck(), NOW)), 'merging malformed data changed the result');
+    }]
+  ];
+}
+
+/* ---------- Fuzzer ---------- */
+
+// mulberry32: small, fast and the same in every browser, so a seed always
+// replays the same history.
+function prng(seed){
+  let s = seed >>> 0;
+  return function(){
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Words include a padded and a differently cased copy, and é in both NFC
+// and NFD, so normalisation is exercised too.
+const WORDS = ['apple', 'Apple ', 'bread', 'cat', 'dog', 'égal', 'égal', 'Haus', 'house', 'tree'];
+const TRANSLATIONS = ['one', 'two', 'three'];
+const DECK_NAMES = ['IELTS', 'German', 'german', 'Chinese', 'Arabic'];
+const VOICES = ['en-US', 'de-DE', 'zh-CN', 'ar-SA'];
+const INTERVAL_DAYS = {1: 1, 2: 2, 3: 4, 4: 7, 5: 14};
+
+function fuzz(M, seed, histories, steps){
+  const {mergeDecks, readDeck, emptyDeck, normWord, cardKey, deckNameKey} = M;
+  const stats = {histories: 0, edits: 0, syncs: 0, checks: {commutativity: 0, idempotency: 0, absorption: 0, invariants: 0, convergence: 0}};
+  const failures = {commutativity: [], idempotency: [], absorption: [], invariants: [], convergence: []};
+  const note = (prop, seedUsed, step, msg) => { if(failures[prop].length < 5) failures[prop].push('seed ' + seedUsed + ', step ' + step + ': ' + msg); };
+
+  for(let h = 0; h < histories; h++){
+    const hs = seed + h;
+    const rnd = prng(hs);
+    const int = n => Math.floor(rnd() * n);
+    const pick = arr => arr[int(arr.length)];
+    let t = T0;
+    let nextDeck = 1;
+    const newId = () => 'k' + String(nextDeck++).padStart(10, '0');
+    const fresh = () => ({format: 2, decks: [deck('default', 'IELTS')], deckTombstones: [], cards: [],
+                          tombstones: [], activity: {}, settings: null});
+    let server = mergeDecks(readDeck(fresh()), emptyDeck(), t);
+    const devs = [0, 1, 2].map(i => ({id: 'dev' + i, d: fresh(), lastDeleted: null, lastDeletedDeck: null}));
+
+    // The same steps as the app's own actions, on the device's local data.
+    const day = () => new Date(t).toISOString().slice(0, 10);
+    const nameTaken = (d, name, exceptId) => d.decks.some(x => x.id !== exceptId && deckNameKey(x.name) === deckNameKey(name));
+    const tombstone = (d, deckId, word) => {
+      const k = cardKey(deckId, word);
+      d.tombstones = d.tombstones.filter(x => cardKey(x.deck, x.word) !== k).concat([{deck: deckId, word: normWord(word), changedAt: t, deleted: true}]);
+    };
+    const ensureDecks = d => {
+      const missing = new Set(d.cards.filter(c => !d.decks.some(x => x.id === c.deck)).map(c => c.deck));
+      if(!d.decks.length) missing.add('default');
+      missing.forEach(id => {
+        let name = id === 'default' ? 'IELTS' : 'Recovered';
+        for(let n = 2; nameTaken(d, name); n++) name = (id === 'default' ? 'IELTS' : 'Recovered') + ' ' + n;
+        d.decks.push(deck(id, name));
+      });
+      return missing.size;
+    };
+    const local = dev => mergeDecks(readDeck(dev.d), emptyDeck(), t);
+
+    const ops = {
+      add(dev){
+        const d = dev.d, dk = pick(d.decks), word = pick(WORDS), tr = pick(TRANSLATIONS);
+        const k = cardKey(dk.id, word);
+        const have = d.cards.find(c => cardKey(c.deck, c.word) === k);
+        if(have){
+          if(normWord(have.translation) !== normWord(tr)){ have.translation = tr; have.changedAt = t; }
+        } else {
+          const i = d.tombstones.findIndex(x => cardKey(x.deck, x.word) === k);
+          let changedAt = 0;
+          if(i !== -1){ d.tombstones.splice(i, 1); changedAt = t; }
+          d.cards.push({deck: dk.id, word: word.trim().normalize('NFC'), translation: tr, box: 1, seen: false, due: t, changedAt});
+          dk.activeAt = t;
+        }
+      },
+      rate(dev){
+        const c = pick(dev.d.cards); if(!c) return;
+        if(rnd() < 0.6){ c.box = Math.min(c.box + 1, 5); c.due = t + INTERVAL_DAYS[c.box] * 86400000; }
+        else { c.box = 1; c.due = t; }
+        c.seen = true;
+        c.changedAt = t;
+        const a = dev.d.activity[day()] || (dev.d.activity[day()] = {});
+        a[dev.id + ':' + c.deck] = (a[dev.id + ':' + c.deck] || 0) + 1;
+      },
+      move(dev){
+        const c = pick(dev.d.cards); if(!c) return;
+        c.box = 1 + int(5); c.due = t; c.changedAt = t;
+      },
+      deleteWord(dev){
+        const c = pick(dev.d.cards); if(!c) return;
+        dev.d.cards = dev.d.cards.filter(x => x !== c);
+        tombstone(dev.d, c.deck, c.word);
+        dev.lastDeleted = [c]; dev.lastDeletedDeck = null;
+      },
+      // As undoDelete: the deck and cards come back as a fresh edit, with no
+      // further checks.
+      undo(dev){
+        if(!dev.lastDeleted) return;
+        const d = dev.d, dk = dev.lastDeletedDeck;
+        if(dk){
+          d.deckTombstones = d.deckTombstones.filter(x => x.id !== dk.id);
+          if(!d.decks.some(x => x.id === dk.id)) d.decks.push(Object.assign({}, dk, {changedAt: t, activeAt: t}));
+        }
+        const ks = new Set(dev.lastDeleted.map(c => cardKey(c.deck, c.word)));
+        d.tombstones = d.tombstones.filter(x => !ks.has(cardKey(x.deck, x.word)));
+        dev.lastDeleted.forEach(c => d.cards.push(Object.assign({}, c, {changedAt: t})));
+      },
+      createDeck(dev){
+        const name = pick(DECK_NAMES);
+        if(nameTaken(dev.d, name)) return;
+        dev.d.decks.push(deck(newId(), name, t, t, pick(VOICES)));
+      },
+      renameDeck(dev){
+        const dk = pick(dev.d.decks), name = pick(DECK_NAMES);
+        if(nameTaken(dev.d, name, dk.id) || dk.name === name) return;
+        dk.name = name; dk.changedAt = t;
+      },
+      setVoice(dev){
+        const dk = pick(dev.d.decks), v = pick(VOICES);
+        if(dk.voice === v) return;
+        dk.voice = v; dk.changedAt = t;
+      },
+      deleteDeck(dev){
+        const d = dev.d;
+        if(d.decks.length < 2) return;
+        const dk = pick(d.decks);
+        d.decks = d.decks.filter(x => x !== dk);
+        d.deckTombstones = d.deckTombstones.filter(x => x.id !== dk.id)
+          .concat([{id: dk.id, name: dk.name, voice: dk.voice, changedAt: t, activeAt: dk.activeAt || 0, deleted: true}]);
+        const mine = d.cards.filter(c => c.deck === dk.id);
+        d.cards = d.cards.filter(c => c.deck !== dk.id);
+        mine.forEach(c => tombstone(d, c.deck, c.word));
+        dev.lastDeleted = mine; dev.lastDeletedDeck = dk;
+      }
+    };
+    const weights = [['add', 6], ['rate', 4], ['move', 1], ['deleteWord', 2], ['undo', 1], ['createDeck', 2],
+                     ['renameDeck', 1], ['setVoice', 1], ['deleteDeck', 1], ['sync', 4]];
+    const total = weights.reduce((s, w) => s + w[1], 0);
+    const chooseOp = () => { let r = rnd() * total; for(const [n, w] of weights){ if((r -= w) < 0) return n; } return 'add'; };
+
+    // Checks the merge laws on two data sets at the current time.
+    const check = (x, y, step) => {
+      const m = mergeDecks(x, y, t);
+      stats.checks.commutativity++;
+      if(J(m) !== J(mergeDecks(y, x, t))) note('commutativity', hs, step, 'merge(x, y) ≠ merge(y, x)');
+      stats.checks.idempotency++;
+      if(J(mergeDecks(m, m, t)) !== J(m)) note('idempotency', hs, step, 'merge(m, m) ≠ m');
+      else if(J(mergeDecks(x, x, t)) !== J(mergeDecks(x, emptyDeck(), t))) note('idempotency', hs, step, 'merge(x, x) ≠ merge(x, empty)');
+      stats.checks.absorption++;
+      if(J(mergeDecks(x, m, t)) !== J(m)) note('absorption', hs, step, 'merge(x, merge(x, y)) ≠ merge(x, y)');
+      else if(J(mergeDecks(m, y, t)) !== J(m)) note('absorption', hs, step, 'merge(merge(x, y), y) ≠ merge(x, y)');
+      stats.checks.invariants++;
+      const problem = invariantProblem(m);
+      if(problem) note('invariants', hs, step, problem);
+      return m;
+    };
+    const invariantProblem = m => {
+      const active = new Set(m.decks.map(d => d.id));
+      const stray = m.cards.find(c => !active.has(c.deck));
+      if(stray) return 'card "' + stray.word + '" is in deck ' + stray.deck + ', which is not active';
+      const keys = new Set();
+      for(const e of m.cards.concat(m.tombstones)){
+        const k = cardKey(e.deck, e.word);
+        if(keys.has(k)) return 'word "' + e.word + '" appears twice in deck ' + e.deck;
+        keys.add(k);
+      }
+      const names = new Set();
+      for(const d of m.decks){
+        const k = deckNameKey(d.name);
+        if(names.has(k)) return 'two active decks are named "' + d.name + '"';
+        names.add(k);
+      }
+      const bad = m.deckTombstones.find(d => d.mergedInto && !(d.mergedInto < d.id));
+      if(bad) return 'alias ' + bad.id + ' points at ' + bad.mergedInto + ', which is not a lower id';
+      return '';
+    };
+    // One sync: the server takes one write at a time, merging the device's
+    // data into what it holds, and the device takes the result.
+    const sync = (dev, step) => {
+      const merged = check(server, local(dev), step);
+      server = merged;
+      dev.d = JSON.parse(J(merged));
+      if(ensureDecks(dev.d) && dev.d.cards.some(c => !merged.decks.some(x => x.id === c.deck))){
+        note('invariants', hs, step, 'a device had to recreate a deck for cards the merge left without one');
+      }
+      stats.syncs++;
+    };
+
+    for(let step = 0; step < steps; step++){
+      // Sometimes no time passes, so two devices edit at the same moment and
+      // the tie-breaks are exercised.
+      t += (rnd() < 0.15 ? 0 : 1 + int(180)) * MIN;
+      const dev = pick(devs);
+      const op = chooseOp();
+      // Undo is offered only for the device's latest deletion, so any other
+      // edit (but not a sync in between) takes it away.
+      if(op !== 'sync' && op !== 'undo'){ dev.lastDeleted = null; dev.lastDeletedDeck = null; }
+      if(op === 'sync') sync(dev, step);
+      else { ops[op](dev); stats.edits++; }
+      if(op === 'undo'){ dev.lastDeleted = null; dev.lastDeletedDeck = null; }
+      // Now and then, check the laws on two devices' unsynced data directly.
+      if(rnd() < 0.2){
+        const [a, b] = [pick(devs), pick(devs)];
+        check(local(a), local(b), step);
+      }
+    }
+    // Convergence: with no more edits, two rounds of every device syncing in
+    // a random order leave every device holding exactly what the server holds.
+    t += MIN;
+    for(let round = 0; round < 2; round++){
+      const order = devs.slice().sort(() => rnd() - 0.5);
+      order.forEach(dev => sync(dev, 'final'));
+    }
+    stats.checks.convergence++;
+    const want = J(server);
+    const off = devs.filter(dev => J(local(dev)) !== want);
+    if(off.length) note('convergence', hs, 'final', off.map(d => d.id).join(', ') + ' differ from the server after two rounds');
+    else if(devs.some(dev => J(mergeDecks(server, local(dev), t)) !== want)) note('convergence', hs, 'final', 'one more sync still changed the server');
+    stats.histories++;
+  }
+  return {stats, failures};
+}
+
+/* ---------- Running and showing results ---------- */
+
+function row(list, ok, name, detail){
+  const li = document.createElement('li');
+  const badge = document.createElement('span');
+  badge.className = 'badge ' + (ok ? 'pass' : 'fail');
+  badge.textContent = ok ? 'PASS' : 'FAIL';
+  const n = document.createElement('span');
+  n.className = 'name';
+  n.textContent = name;
+  li.append(badge, n);
+  if(detail){
+    const d = document.createElement('span');
+    d.className = 'detail';
+    d.textContent = detail;
+    li.append(d);
+  }
+  list.append(li);
+}
+
+async function run(){
+  const btn = document.getElementById('run');
+  const summary = document.getElementById('summary');
+  const scenList = document.getElementById('scenarios');
+  const fuzzList = document.getElementById('fuzz');
+  btn.disabled = true;
+  scenList.textContent = ''; fuzzList.textContent = '';
+  document.getElementById('fuzzNote').textContent = '';
+  summary.className = ''; summary.textContent = 'Running…';
+  const results = {scenarios: [], fuzz: null, passed: 0, failed: 0};
+  window.__results = null;
+  await new Promise(r => setTimeout(r, 30));
+  try{
+    const {api, lines, hash} = await loadMerge();
+    document.getElementById('source').textContent = 'Loaded ' + NEEDED.length + ' functions and constants from ../index.html ('
+      + lines + ' lines' + (hash ? ', SHA-256 ' + hash + '…' : '') + ').';
+
+    for(const [name, fn] of scenarios(api)){
+      let ok = true, detail = '';
+      try{ fn(); }catch(e){ ok = false; detail = e instanceof Fail ? e.message : 'Error: ' + e.message; }
+      row(scenList, ok, name, detail);
+      results.scenarios.push({name, ok, detail});
+      ok ? results.passed++ : results.failed++;
+    }
+
+    const seed = Math.floor(+document.getElementById('seed').value) || 0;
+    const histories = Math.max(1, Math.floor(+document.getElementById('histories').value) || 1);
+    const steps = Math.max(1, Math.floor(+document.getElementById('steps').value) || 1);
+    const started = performance.now();
+    const {stats, failures} = fuzz(api, seed, histories, steps);
+    const ms = Math.round(performance.now() - started);
+    const labels = {
+      commutativity: 'Commutativity: merge(x, y) = merge(y, x)',
+      idempotency: 'Idempotency: merging data with itself changes nothing',
+      absorption: 'Absorption: merging in something already merged changes nothing',
+      invariants: 'Invariants: no card in an inactive deck, no duplicate words or deck names, aliases point down',
+      convergence: 'Convergence: after syncing, all three devices hold what the server holds'
+    };
+    Object.keys(labels).forEach(k=>{
+      const ok = failures[k].length === 0;
+      const detail = stats.checks[k] + ' checks' + (k === 'convergence' ? ' (one per history)' : '')
+        + (ok ? '' : '\n' + failures[k].join('\n'));
+      row(fuzzList, ok, labels[k], detail);
+      ok ? results.passed++ : results.failed++;
+    });
+    results.fuzz = {seed, histories, steps, ms, stats, failures};
+    document.getElementById('fuzzNote').textContent = 'Seed ' + seed + ': ' + stats.histories + ' three-device histories of ' + steps + ' steps, '
+      + stats.edits + ' edits and ' + stats.syncs + ' syncs, in ' + ms + ' ms. Rerun with the same seed to replay them exactly.';
+    summary.className = results.failed ? 'fail' : 'pass';
+    summary.textContent = results.failed ? results.failed + ' of ' + (results.passed + results.failed) + ' failed'
+                                         : 'All ' + results.passed + ' passed';
+  }catch(e){
+    summary.className = 'fail';
+    summary.textContent = 'Could not run: ' + e.message;
+    if(location.protocol === 'file:') summary.textContent += ' (open this page over http(s), not as a file)';
+    results.error = e.message;
+  }
+  window.__results = results;
+  btn.disabled = false;
+}
+
+document.getElementById('run').addEventListener('click', run);
+</script>
+</body>
+</html>

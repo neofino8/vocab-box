@@ -90,6 +90,7 @@ A dated history of how Vocab Box was built, reconstructed from the git log, the 
   - `get_deck(code)` returns the deck and its version, or `empty` for an unused code.
   - `put_deck(code, deck, expected_version)` writes only if the version is still current.
 - **`supabase/verify.sql`** calls the functions as the anonymous role, asserts each guarantee, and removes its test row.
+- **Merge testing:** the maintainer reports that the merge was tested during development with in-page scenario tests and a fuzzer. Those tests were not committed at the time. They were recreated and committed on 2026-10-21 (see the last milestone).
 - **Optional sync in the app**, off by default, with sync codes instead of accounts.
 - **Joining from the landing page** for someone who already uses the app on another device.
 - **A join dialog** that asks whether to combine this device's words with the synced deck or replace them, and whether to share appearance and settings.
@@ -182,6 +183,62 @@ A dated history of how Vocab Box was built, reconstructed from the git log, the 
 
 ---
 
+## 2026-10-21: The merge tests, recreated and committed
+
+**What was built**
+
+`tests/merge-tests.html` is a test page for the sync merge that runs in a browser with one click and shows pass or fail for each test. It recreates tests that, according to the maintainer, were run in earlier sessions but never committed.
+
+- **Seven scenario tests**, each merging both ways round and requiring the two results to match:
+  - a demotion survives a higher box elsewhere;
+  - a deletion spreads instead of coming back;
+  - a deck deletion spreads, taking its cards, including ones the deleting device never saw;
+  - a rename syncs as a rename;
+  - same-name decks are combined into one;
+  - a deleted deck comes back if words were added or edited after the deletion;
+  - old-format data merges into the default deck.
+- **A fuzzer** that plays random edit histories on three devices and syncs them through a server that takes one write at a time. The edits follow the app's own actions: add, rate, move, delete and undo words, and create, rename, revoice and delete decks. It checks:
+  - **Commutativity:** `merge(x, y)` equals `merge(y, x)`.
+  - **Idempotency:** merging data with itself changes nothing.
+  - **Absorption:** merging in data already merged changes nothing.
+  - **Invariants:** no card in an inactive deck, no word twice in a deck, no two active decks with the same name, and every alias points at a lower id.
+  - **Convergence:** once the edits stop, two sync rounds leave all three devices holding exactly what the server holds.
+
+**Key decisions**
+
+- **The page tests the real code.** It fetches `../index.html` and lifts the merge functions and the constants they use out of it by name. A function that is renamed or missing fails the run instead of being stubbed.
+- **The app never starts on the test page.** Only the pure merge functions run, so opening the page on the live site can't touch anyone's saved words or sync.
+- **The fuzzer uses a seeded random number generator** (mulberry32), so a seed replays exactly the same histories. Each failure is reported with the seed and step to replay it.
+- **Two things the fuzzer does not check:**
+  - It does not check that different sync orders give the same result. The merge's own comments say that combining same-name decks depends on the order of merges, and that the server fixes the order by taking one write at a time.
+  - It does not test tombstone expiry: its histories span days, not the 60 days a tombstone is kept.
+- **The page needs http(s).** Browsers block a page opened as a `file://` from reading the file next to it, so it runs on GitHub Pages or a local server, and says so if opened as a file.
+
+**Checking that the tests can fail**
+
+Before the results were trusted, nine deliberate bugs were planted in copies of the merge code, one at a time:
+- the newest edit loses;
+- a deletion loses a tie;
+- tie-breaks depend on argument order;
+- no deck combining;
+- no deck revival;
+- cards outlive a deleted deck;
+- old cards lose their deck;
+- aliases are ignored;
+- review counts are summed instead of maxed.
+
+All nine were caught. The first version missed the tie bug, because its clock always moved forward, so no two devices ever edited at the same moment. The fuzzer now sometimes lets no time pass between steps, and the deletion scenario checks a tie directly.
+
+**Results (2026-10-21, Chromium)**
+
+| Run | Result |
+|---|---|
+| Scenarios | 7 of 7 passed |
+| Fuzzer, default (seed 20261021, 500 histories of 60 steps) | All 5 properties passed: 14,310 merge checks for each of the first four, 500 convergence checks; 24,740 edits and 8,260 syncs, in about 1.2 s. A second run with the same seed gave identical counts. |
+| Fuzzer, larger (seed 1, 10,000 histories of 60 steps) | All 5 properties passed: 283,892 merge checks each, 10,000 convergence checks; 495,735 edits and 164,265 syncs, in about 21 s. |
+
+---
+
 ## By the numbers
 
 Counted from the repository at the commit that adds this log.
@@ -194,6 +251,7 @@ Counted from the repository at the commit that adds this log.
 | The app | `index.html`, 4,581 lines (about 206 KB), with no build step and no dependencies |
 | Backend | `supabase/schema.sql` (210 lines) and `supabase/verify.sql` (91 lines) |
 | Keepalive | One GitHub Actions workflow, running every 6 hours |
+| Merge tests | `tests/merge-tests.html` (633 lines): 7 scenario tests and a fuzzer checking 5 properties |
 | Study modes | 4: Learn, Review, Quiz, Match |
 | Leitner boxes | 5, reviewed every 1, 2, 4, 7 and 14 days |
 | Themes | 10 (8 dark, 2 light) plus Auto |

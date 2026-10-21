@@ -7,7 +7,7 @@ do $$
 declare
   r jsonb;
   big jsonb := jsonb_build_object('cards',
-    (select jsonb_agg(repeat('x', 100)) from generate_series(1, 6000)));
+    (select jsonb_agg(repeat('x', 100)) from generate_series(1, 16000)));
 begin
   set local role anon;
 
@@ -61,7 +61,27 @@ begin
     perform public.put_deck('TEST0-00001', big, 2);
     raise exception 'FAIL: oversized deck accepted';
   exception when raise_exception then
-    if sqlerrm <> 'deck too large (limit 500 kB)' then raise; end if;
+    if sqlerrm <> 'deck too large (limit 1.5 MB)' then raise; end if;
+  end;
+
+  -- Once the stored deck is in the format with decks, a write in the older
+  -- format is refused, and a write in the newer one is still taken.
+  r := public.put_deck('TEST0-00001', '{"format":2,"decks":[],"cards":[]}', 2);
+  assert r->>'status' = 'ok' and (r->>'version')::int = 3, 'format 2 write: ' || r;
+  begin
+    perform public.put_deck('TEST0-00001', '{"cards":[]}', 3);
+    raise exception 'FAIL: old-format write over a format 2 deck accepted';
+  exception when raise_exception then
+    if sqlerrm <> 'this deck needs a newer version of Vocab Box; reload the page' then raise; end if;
+  end;
+  r := public.put_deck('TEST0-00001', '{"format":2,"decks":[],"cards":[1]}', 3);
+  assert r->>'status' = 'ok' and (r->>'version')::int = 4, 'second format 2 write: ' || r;
+
+  -- And the format helper is not reachable either.
+  begin
+    perform public._deck_format('{}');
+    raise exception 'FAIL: anon could call _deck_format';
+  exception when insufficient_privilege then null;
   end;
 
   reset role;

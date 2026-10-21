@@ -419,6 +419,11 @@
   .deck-switch-name{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; unicode-bidi:isolate; }
   .deck-caret{ width:16px; height:16px; flex-shrink:0; color:var(--soft); }
   .deck-panel{ margin:0 0 12px; }
+  .deck-notice{
+    margin:-4px 0 12px; padding:9px 12px; border-radius:6px;
+    background:var(--panel); font-size:12.5px; color:var(--accent);
+  }
+  body.landing-on .deck-notice{ display:none; }
   .deck-head{ font-size:13px; font-weight:600; margin:0 0 8px; }
   .deck-list{ display:flex; flex-direction:column; gap:4px; margin-bottom:10px; }
   .deck-item{
@@ -850,6 +855,7 @@
       <svg class="deck-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
   </div>
+  <div class="deck-notice" id="deckNotice" role="status" dir="auto" hidden></div>
   <div class="deck-panel" id="deckPanel">
     <div id="deckPanelBody"></div>
     <div class="undo-row" id="deckUndoRow" style="display:none;"></div>
@@ -1104,6 +1110,7 @@ const I18N = {
       confirmDeleteDeckEmpty: 'Delete the empty deck “{name}”?',
       deletedDeck: 'Deleted deck {name}', deckLastNote: 'Your only deck can’t be deleted.',
       deckNameEmpty: 'Give the deck a name.', deckNameTaken: 'You already have a deck with that name.',
+      decksCombined: 'Two decks named “{name}” were combined into one.', deckRecovered: 'Recovered deck',
       exportBtn: 'Export backup', importBtn: 'Import',
       backupDone: 'Backup downloaded.',
       backupBad: 'Could not read that file. Is it a Vocab Box backup?',
@@ -1241,6 +1248,7 @@ const I18N = {
       confirmDeleteDeckEmpty: 'Удалить пустой набор «{name}»?',
       deletedDeck: 'Набор {name} удалён', deckLastNote: 'Единственный набор нельзя удалить.',
       deckNameEmpty: 'Введите название набора.', deckNameTaken: 'Набор с таким названием уже есть.',
+      decksCombined: 'Два набора «{name}» объединены в один.', deckRecovered: 'Восстановленный набор',
       exportBtn: 'Скачать копию', importBtn: 'Загрузить',
       backupDone: 'Резервная копия скачана.',
       backupBad: 'Не удалось прочитать файл. Это резервная копия Vocab Box?',
@@ -1380,6 +1388,7 @@ const I18N = {
       confirmDeleteDeckEmpty: 'Boʻsh «{name}» toʻplami oʻchirilsinmi?',
       deletedDeck: '{name} toʻplami oʻchirildi', deckLastNote: 'Yagona toʻplamni oʻchirib boʻlmaydi.',
       deckNameEmpty: 'Toʻplamga nom bering.', deckNameTaken: 'Bunday nomli toʻplam allaqachon bor.',
+      decksCombined: 'Ikkita «{name}» toʻplami bittaga birlashtirildi.', deckRecovered: 'Tiklangan toʻplam',
       exportBtn: 'Zaxira nusxa', importBtn: 'Yuklash',
       backupDone: 'Zaxira nusxa yuklab olindi.',
       backupBad: 'Faylni oʻqib boʻlmadi. Bu Vocab Box zaxira nusxasimi?',
@@ -1771,19 +1780,35 @@ function cleanVoice(v){
 }
 // Deck entries from storage, backups and other devices are checked field by
 // field, and come out with their keys in a fixed order for comparison.
+// `changedAt` dates the name and voice; `activeAt` is when words were last
+// added, which counts as using the deck but must not override a rename.
 function readDeckEntry(x){
   if(!x || typeof x !== 'object' || typeof x.id !== 'string' || !DECK_ID_RE.test(x.id)) return null;
   const name = cleanDeckName(x.name);
   if(!name) return null;
-  return {id: x.id, name, voice: cleanVoice(x.voice), changedAt: Number.isFinite(+x.changedAt) ? +x.changedAt : 0};
+  return {id: x.id, name, voice: cleanVoice(x.voice), changedAt: Number.isFinite(+x.changedAt) ? +x.changedAt : 0,
+          activeAt: Number.isFinite(+x.activeAt) ? +x.activeAt : 0};
+}
+// New words carry no edit time of their own (see addedStamp), so adding them
+// is recorded on the deck instead. That keeps a deck that was deleted on
+// another device in the meantime, rather than losing the words.
+function noteDeckActive(id){
+  const d = deckById(id);
+  if(!d) return;
+  d.activeAt = Date.now();
+  saveDecks();
 }
 // A deleted deck keeps its name and voice, so it can come back as it was.
 function readDeckTombstone(x){
   if(!x || typeof x !== 'object' || typeof x.id !== 'string' || !DECK_ID_RE.test(x.id)
      || !Number.isFinite(+x.changedAt)) return null;
+  // It also keeps activeAt, so a merge never forgets words added to a deck
+  // just because the deck is deleted at the moment.
   const tb = {id: x.id, name: cleanDeckName(x.name) || DEFAULT_DECK_NAME, voice: cleanVoice(x.voice),
-              changedAt: +x.changedAt, deleted: true};
-  if(typeof x.mergedInto === 'string' && DECK_ID_RE.test(x.mergedInto) && x.mergedInto !== x.id) tb.mergedInto = x.mergedInto;
+              changedAt: +x.changedAt, activeAt: Number.isFinite(+x.activeAt) ? +x.activeAt : 0, deleted: true};
+  // A combined deck points at the deck it went into. That is always a lower
+  // id, so a chain of them can never loop.
+  if(typeof x.mergedInto === 'string' && DECK_ID_RE.test(x.mergedInto) && x.mergedInto < x.id) tb.mergedInto = x.mergedInto;
   return tb;
 }
 
@@ -1801,15 +1826,22 @@ function isEnglishDeck(){
   return /^en(-|$)/.test(curDeck().voice);
 }
 
-// There is always a deck to show. On the first run with decks this creates
-// the default deck for the existing words, named IELTS, with the voice this
-// device was using; edit time 0 lets any real rename win once decks sync.
+// There is always a deck to show, and every card's deck exists. On the first
+// run with decks this creates the default deck for the existing words, named
+// IELTS, with the voice this device was using. A card can also arrive for a
+// deck nothing here knows, from a device offline for longer than tombstones
+// are kept; it gets a deck rather than being lost. Edit time 0 lets any real
+// rename win once decks sync.
 function ensureDecks(){
-  if(!deckById(DEFAULT_DECK) && (!decks.length || cards.some(c => c.deck === DEFAULT_DECK))){
-    decks.push({id: DEFAULT_DECK, name: DEFAULT_DECK_NAME, voice: cleanVoice(settings.voice), changedAt: 0});
-    saveDecks();
-  }
-  if(!deckById(currentDeck)) currentDeck = decks[0].id;
+  const missing = new Set(cards.filter(c => !deckById(c.deck)).map(c => c.deck));
+  if(!decks.length) missing.add(DEFAULT_DECK);
+  missing.forEach(id=>{
+    let name = id === DEFAULT_DECK ? DEFAULT_DECK_NAME : t('deckRecovered');
+    for(let n = 2; deckNameProblem(name); n++) name = (id === DEFAULT_DECK ? DEFAULT_DECK_NAME : t('deckRecovered')) + ' ' + n;
+    decks.push({id, name, voice: cleanVoice(settings.voice), changedAt: 0, activeAt: 0});
+  });
+  if(missing.size) saveDecks();
+  if(!deckById(currentDeck)) currentDeck = sortedDecks()[0].id;
 }
 
 // The local deck that an imported deck's words go to: the same deck by id,
@@ -1824,7 +1856,8 @@ function adoptDeck(d){
   if(same) return same.id;
   // Importing is deliberate, so it beats an earlier deletion of this deck.
   deckTombstones = deckTombstones.filter(tb => tb.id !== want.id);
-  decks.push({id: want.id, name: cleanDeckName(want.name), voice: cleanVoice(want.voice), changedAt: Date.now()});
+  const now = Date.now();
+  decks.push({id: want.id, name: cleanDeckName(want.name), voice: cleanVoice(want.voice), changedAt: now, activeAt: now});
   saveDecks();
   return want.id;
 }
@@ -1863,7 +1896,8 @@ function switchDeck(id){
 function createDeck(name, voice){
   const problem = deckNameProblem(name);
   if(problem) return problem;
-  const d = {id: newDeckId(), name: cleanDeckName(name), voice: cleanVoice(voice), changedAt: Date.now()};
+  const now = Date.now();
+  const d = {id: newDeckId(), name: cleanDeckName(name), voice: cleanVoice(voice), changedAt: now, activeAt: now};
   decks.push(d);
   saveDecks();
   switchDeck(d.id);
@@ -1905,7 +1939,7 @@ function deleteDeck(id){
   if(!confirm(ask)) return;
   decks = decks.filter(x => x.id !== id);
   deckTombstones = deckTombstones.filter(tb => tb.id !== id)
-    .concat([{id, name: d.name, voice: d.voice, changedAt: Date.now(), deleted: true}]);
+    .concat([{id, name: d.name, voice: d.voice, changedAt: Date.now(), activeAt: d.activeAt || 0, deleted: true}]);
   saveDecks();
   cards = cards.filter(c => c.deck !== id);
   addTombstones(mine);
@@ -2324,6 +2358,7 @@ function importBackup(file){
         deckFor.set(d.id, adoptDeck(d));
       });
       let added = 0, updated = 0;
+      const addedTo = new Set();
       data.cards.forEach(imp=>{
         if(!imp || typeof imp.word !== 'string' || typeof imp.translation !== 'string') return;
         const word = imp.word.trim().normalize('NFC');
@@ -2350,6 +2385,7 @@ function importBackup(file){
             due: imp.due || Date.now(),
             changedAt: addedStamp(deck, word, typeof imp.changedAt === 'number' ? imp.changedAt : 0)
           });
+          addedTo.add(deck);
           added++;
         }
       });
@@ -2370,6 +2406,7 @@ function importBackup(file){
       }
       saveCards();
       ensureDecks();
+      addedTo.forEach(noteDeckActive);
       buildQueue();
       renderStats();
       renderStatsPanel();
@@ -2494,6 +2531,7 @@ function loadSampleDeck(){
     });
   });
   saveCards();
+  noteDeckActive(currentDeck);
   buildQueue();
   renderStats();
   renderStatsPanel();
@@ -2585,7 +2623,7 @@ function undoDelete(){
   const deck = lastDeletedDeck;
   if(deck){
     deckTombstones = deckTombstones.filter(tb => tb.id !== deck.id);
-    if(!deckById(deck.id)) decks.push(Object.assign({}, deck, {changedAt: Date.now()}));
+    if(!deckById(deck.id)) decks.push(Object.assign({}, deck, {changedAt: Date.now(), activeAt: Date.now()}));
     saveDecks();
   }
   lastDeleted.forEach(touch);
@@ -3394,6 +3432,7 @@ document.getElementById('parseBtn').addEventListener('click', ()=>{
   const text = document.getElementById('bulkInput').value;
   const r = parseBulk(text);
   saveCards();
+  if(r.added) noteDeckActive(currentDeck);
   const msg = document.getElementById('parseMsg');
   const parts = [];
   if(r.added) parts.push(t('parseAdded', {n: count('word', r.added)}));
@@ -3577,8 +3616,18 @@ function syncCard(c){
 // A deck from the server is untrusted: keep only well-formed entries, so a
 // malformed deck can never break the app or damage local data.
 function readDeck(d){
-  const out = {cards: [], tombstones: [], activity: {}, settings: null};
+  const out = emptyDeck();
   if(!d || typeof d !== 'object') return out;
+  // Decks from before the format had them come with none. Their cards all
+  // belong to the default deck, which every device creates for itself.
+  if(Array.isArray(d.decks)) d.decks.forEach(x=>{
+    const e = readDeckEntry(x);
+    if(e) out.decks.push(e);
+  });
+  if(Array.isArray(d.deckTombstones)) d.deckTombstones.forEach(x=>{
+    const tb = readDeckTombstone(x);
+    if(tb) out.deckTombstones.push(tb);
+  });
   if(Array.isArray(d.cards)) d.cards.forEach(c=>{
     if(c && typeof c.word === 'string' && typeof c.translation === 'string'
        && c.word.trim() && c.translation.trim()) out.cards.push(syncCard(c));
@@ -3619,21 +3668,97 @@ function entryWins(a, b){
   return cardSig(a) > cardSig(b);                                     // seen, due, word case
 }
 
-// Merges two decks in synced form. Commutative, associative and idempotent,
-// and the output is sorted, so equal content always serialises identically.
+// True if deck entry `a` should replace `b` for the same id. A combined
+// deck's alias always wins and stays, so two decks once combined stay
+// combined; otherwise the newest edit wins and a deletion wins a tie.
+function deckEntryWins(a, b){
+  if(!!a.mergedInto !== !!b.mergedInto) return !!a.mergedInto;
+  if(a.changedAt !== b.changedAt) return a.changedAt > b.changedAt;
+  if(!!a.deleted !== !!b.deleted) return !!a.deleted;
+  return JSON.stringify(a) > JSON.stringify(b);
+}
+
+// Merges two synced data sets. Decks merge by id and cards by deck and word,
+// each by the rules above. Then it settles, repeating until nothing changes:
+//  - A deleted deck comes back if one of its cards was edited, or words were
+//    added to it, after the deletion. Otherwise its cards go with it,
+//    including ones added on a device that hadn't synced when it was deleted.
+//  - Two decks with the same name (made on two devices before they synced)
+//    are combined into the one with the lower id, so the default deck always
+//    keeps its id. The other becomes an alias that moves any of its cards
+//    still arriving from other devices, keeping their edit times, so their
+//    progress merges as usual.
+// The result is commutative and idempotent, and sorted, so equal content
+// always serialises identically. Combining makes it depend on the order of
+// merges, which the server fixes by taking one write at a time.
 function mergeDecks(a, b, now){
   const cutoff = now - TOMBSTONE_TTL;
-  const best = new Map();
-  const offer = e=>{
-    const k = cardKey(e.deck, e.word);
-    const cur = best.get(k);
-    if(!cur || entryWins(e, cur)) best.set(k, e);
+  const deckBest = new Map();
+  const offerDeck = e=>{
+    const cur = deckBest.get(e.id);
+    if(!cur || deckEntryWins(e, cur)) deckBest.set(e.id, e);
   };
+  const entries = [];
+  const activeAt = new Map();
   [a, b].forEach(d=>{
-    d.cards.forEach(offer);
-    d.tombstones.forEach(tb=>{ if(tb.changedAt >= cutoff) offer(tb); });
+    d.decks.concat(d.deckTombstones).forEach(e=>{ if(!(activeAt.get(e.id) >= e.activeAt)) activeAt.set(e.id, e.activeAt); });
+    d.decks.forEach(offerDeck);
+    d.deckTombstones.forEach(tb=>{ if(tb.changedAt >= cutoff) offerDeck(tb); });
+    d.cards.forEach(c => entries.push(c));
+    d.tombstones.forEach(tb=>{ if(tb.changedAt >= cutoff) entries.push(tb); });
   });
-  const out = {cards: [], tombstones: [], activity: {}, settings: pickSettings(a.settings, b.settings)};
+  const target = id=>{
+    for(let e = deckBest.get(id), n = 0; e && e.mergedInto && n < 200; e = deckBest.get(id), n++) id = e.mergedInto;
+    return id;
+  };
+  let best;
+  // Each round either brings back a deck or combines two, and neither can be
+  // undone within a merge, so this ends well within the cap.
+  for(let round = 0; round < 500; round++){
+    best = new Map();
+    entries.forEach(e0=>{
+      const deck = target(e0.deck);
+      const e = deck === e0.deck ? e0 : Object.assign({}, e0, {deck});
+      const k = cardKey(e.deck, e.word);
+      const cur = best.get(k);
+      if(!cur || entryWins(e, cur)) best.set(k, e);
+    });
+    let changed = false;
+    const newest = new Map();
+    best.forEach(e=>{
+      if(!e.deleted && !(newest.get(e.deck) >= e.changedAt)) newest.set(e.deck, e.changedAt);
+    });
+    deckBest.forEach((d, id)=>{
+      if(!d.deleted || d.mergedInto) return;
+      const t = Math.max(newest.has(id) ? newest.get(id) : -1, activeAt.has(id) ? activeAt.get(id) : -1);
+      if(t > d.changedAt){
+        deckBest.set(id, {id, name: d.name, voice: d.voice, changedAt: t, activeAt: activeAt.get(id) || 0});
+        changed = true;
+      }
+    });
+    const byName = new Map();
+    [...deckBest.values()].filter(d => !d.deleted).sort((x, y) => x.id < y.id ? -1 : 1).forEach(d=>{
+      const k = deckNameKey(d.name), keep = byName.get(k);
+      if(!keep){ byName.set(k, d); return; }
+      // Stamped with the merge time, so the alias outlives the 60 days that
+      // tombstones are kept for at least that long from now.
+      deckBest.set(d.id, {id: d.id, name: d.name, voice: d.voice, changedAt: Math.max(now, d.changedAt), activeAt: d.activeAt,
+                          deleted: true, mergedInto: keep.id});
+      changed = true;
+    });
+    if(!changed) break;
+  }
+  // Cards still in a deleted deck are deleted with it.
+  best.forEach((e, k)=>{
+    const d = deckBest.get(e.deck);
+    if(!e.deleted && d && d.deleted) best.set(k, {deck: e.deck, word: normWord(e.word), changedAt: d.changedAt, deleted: true});
+  });
+  const out = emptyDeck();
+  out.settings = pickSettings(a.settings, b.settings);
+  [...deckBest.keys()].sort().forEach(id=>{
+    const d = Object.assign({}, deckBest.get(id), {activeAt: Math.max(deckBest.get(id).activeAt, activeAt.get(id) || 0)});
+    (d.deleted ? out.deckTombstones : out.decks).push(d);
+  });
   [...best.keys()].sort().forEach(k=>{
     const e = best.get(k);
     (e.deleted ? out.tombstones : out.cards).push(e);
@@ -3650,15 +3775,18 @@ function mergeDecks(a, b, now){
   return out;
 }
 
+// Format 2 is the one with decks. The server refuses older-format writes
+// over it, so a page from before decks can't fold every deck into one.
 function emptyDeck(){
-  return {cards: [], tombstones: [], activity: {}, settings: null};
+  return {format: 2, decks: [], deckTombstones: [], cards: [], tombstones: [], activity: {}, settings: null};
 }
 
 // This device's data in synced form. The settings unit is included only when
 // this device shares its look and settings.
 function localDeck(now, share){
   const shared = share === undefined ? sync.shareSettings : share;
-  return mergeDecks(readDeck({cards, tombstones, activity, settings: shared ? localSettingsUnit() : null}), emptyDeck(), now);
+  return mergeDecks(readDeck({decks, deckTombstones, cards, tombstones, activity,
+                              settings: shared ? localSettingsUnit() : null}), emptyDeck(), now);
 }
 
 // Look and study settings shared between devices, as one unit with its own
@@ -3730,11 +3858,19 @@ function applySharedSettings(u){
 // in place, keeping their local ids and order, so an open Learn session,
 // review card or quiz keeps working; cards new to this device go at the end.
 function applyDeck(merged){
+  // Cards of a deck that was combined into another are matched in their new
+  // deck, so they keep their place too.
+  const aliasOf = new Map(merged.deckTombstones.filter(tb => tb.mergedInto).map(tb => [tb.id, tb.mergedInto]));
+  const target = id=>{
+    for(let n = 0; aliasOf.has(id) && n < 200; n++) id = aliasOf.get(id);
+    return id;
+  };
+  const combined = merged.deckTombstones.filter(tb => tb.mergedInto && deckById(tb.id));
   const win = new Map(merged.cards.map(c => [cardKey(c.deck, c.word), c]));
   const kept = [];
   const gone = new Set();
   cards.forEach(c=>{
-    const k = cardKey(c.deck, c.word), w = win.get(k);
+    const k = cardKey(target(c.deck), c.word), w = win.get(k);
     if(w){ Object.assign(c, w); kept.push(c); win.delete(k); }
     else gone.add(c);
   });
@@ -3743,23 +3879,49 @@ function applyDeck(merged){
   });
   cards = kept;
   tombstones = merged.tombstones.map(tb => Object.assign({}, tb));
+  decks = merged.decks.map(d => Object.assign({}, d));
+  deckTombstones = merged.deckTombstones.map(tb => Object.assign({}, tb));
   activity = JSON.parse(JSON.stringify(merged.activity));
+  // Follow the current deck if it was combined into another; if it was
+  // deleted elsewhere, ensureDecks falls back to the first one.
+  const was = currentDeck;
+  if(!deckById(currentDeck) && deckById(target(currentDeck))) currentDeck = target(currentDeck);
   applyingRemote = true;
-  try{ saveCards(); saveTombstones(); saveActivity(); ensureDecks(); }
+  try{ saveCards(); saveTombstones(); saveDecks(); saveActivity(); ensureDecks(); }
   finally{ applyingRemote = false; }
   if(gone.size){
     queue = queue.filter(c => !gone.has(c));
     learnList = learnList.filter(c => !gone.has(c));
     if(current && gone.has(current)) current = null;
   }
+  if(currentDeck !== was){
+    try{ localStorage.setItem(CURRENT_DECK_KEY, currentDeck); }catch(e){}
+    boxFilter = null;
+    learnList = [];
+    setMode(mode);
+  }
   renderStats();
   renderStatsPanel();
   renderWordList();
+  renderDeckPanel();
   if(mode === 'learn') renderLearn();
   else if(mode === 'review' && !current){
     if(!practiceMode && queue.length === 0) buildQueue();
     renderCard(false);
   }
+  if(combined.length){
+    const into = deckById(target(combined[0].id));
+    if(into) showDeckNotice(t('decksCombined', {name: into.name}));
+  }
+}
+
+let deckNoticeTimer = null;
+function showDeckNotice(text){
+  const el = document.getElementById('deckNotice');
+  el.textContent = text;
+  el.hidden = false;
+  clearTimeout(deckNoticeTimer);
+  deckNoticeTimer = setTimeout(()=>{ el.hidden = true; }, 9000);
 }
 
 async function rpc(fn, body, keepalive){
@@ -3834,7 +3996,7 @@ async function syncNow(){
       const local = localDeck(now);
       const merged = mergeDecks(local, theirs, now);
       const mergedJson = JSON.stringify(merged);
-      const body = d => JSON.stringify([d.cards, d.tombstones, d.activity]);
+      const body = d => JSON.stringify([d.decks, d.deckTombstones, d.cards, d.tombstones, d.activity]);
       if(body(merged) !== body(local)) applyDeck(merged);
       // A device that doesn't share settings still carries the shared unit
       // through unchanged; it just never applies it.
@@ -3967,7 +4129,7 @@ async function connectWithCode(input){
   }
   // Replace keeps only this device's review counts, which are not words.
   const mine = localDeck(now, false);
-  if(choice.words === 'replace'){ mine.cards = []; mine.tombstones = []; }
+  if(choice.words === 'replace'){ mine.decks = []; mine.deckTombstones = []; mine.cards = []; mine.tombstones = []; }
   applyDeck(mergeDecks(mine, theirs, now));
   sync = {code, version: remote.version, lastSynced: Date.now(), dirty: true,
           shareSettings: choice.share, adoptPending: false};

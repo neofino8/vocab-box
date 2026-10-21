@@ -43,6 +43,18 @@ as $$
   select translate(upper(regexp_replace(coalesce(code, ''), '[^0-9A-Za-z]', '', 'g')), 'ILO', '110');
 $$;
 
+-- The data format a stored deck was written in: 2 since decks were added,
+-- 1 for anything older (which has no format field). Not granted to anyone.
+create or replace function public._deck_format(deck jsonb)
+returns integer
+language sql
+immutable
+set search_path = ''
+as $$
+  select case when jsonb_typeof(deck -> 'format') = 'number'
+              then floor((deck ->> 'format')::numeric)::integer else 1 end;
+$$;
+
 -- Reads a deck. Returns an envelope rather than raising when the code is
 -- simply unused, so a first run on a new code is not an error.
 --   { status: 'ok'|'empty', version: int, deck: jsonb|null, updated_at: ts }
@@ -106,8 +118,8 @@ begin
   if jsonb_typeof(put_deck.deck) <> 'object' then
     raise exception 'deck must be a JSON object';
   end if;
-  if octet_length(put_deck.deck::text) > 500000 then
-    raise exception 'deck too large (limit 500 kB)';
+  if octet_length(put_deck.deck::text) > 1500000 then
+    raise exception 'deck too large (limit 1.5 MB)';
   end if;
   if jsonb_typeof(put_deck.deck -> 'cards') = 'array'
      and jsonb_array_length(put_deck.deck -> 'cards') > 10000 then
@@ -116,6 +128,14 @@ begin
   if jsonb_typeof(put_deck.deck -> 'tombstones') = 'array'
      and jsonb_array_length(put_deck.deck -> 'tombstones') > 10000 then
     raise exception 'too many tombstones (limit 10000)';
+  end if;
+  if jsonb_typeof(put_deck.deck -> 'decks') = 'array'
+     and jsonb_array_length(put_deck.deck -> 'decks') > 200 then
+    raise exception 'too many decks (limit 200)';
+  end if;
+  if jsonb_typeof(put_deck.deck -> 'deckTombstones') = 'array'
+     and jsonb_array_length(put_deck.deck -> 'deckTombstones') > 1000 then
+    raise exception 'too many deck tombstones (limit 1000)';
   end if;
 
   -- Lock the row for the rest of this transaction so two devices writing at
@@ -148,6 +168,14 @@ begin
     return jsonb_build_object('status', 'ok', 'version', v_version);
   end if;
 
+  -- A version of the app from before decks would drop them and fold every
+  -- deck's words into one, so once a deck is stored in the newer format only
+  -- writes in that format are taken. The old app shows a sync error until
+  -- the page is reloaded and picks up the new version.
+  if public._deck_format(v_current.deck) >= 2 and public._deck_format(put_deck.deck) < 2 then
+    raise exception 'this deck needs a newer version of Vocab Box; reload the page';
+  end if;
+
   if v_current.version <> coalesce(put_deck.expected_version, -1) then
     return jsonb_build_object(
       'status', 'conflict', 'version', v_current.version, 'deck', v_current.deck
@@ -170,6 +198,7 @@ $$;
 -- New functions are executable by PUBLIC by default, so revoke first and then
 -- grant only the two entry points.
 revoke execute on function public._normalize_code(text) from public, anon, authenticated;
+revoke execute on function public._deck_format(jsonb) from public, anon, authenticated;
 revoke execute on function public.get_deck(text) from public, anon, authenticated;
 revoke execute on function public.put_deck(text, jsonb, integer) from public, anon, authenticated;
 

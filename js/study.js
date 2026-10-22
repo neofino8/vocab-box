@@ -459,12 +459,16 @@ function pickMatch(item, side, el){
     }
     renderMatch();
   } else {
-    match.locked = true;
+    // The lock belongs to this match. Leaving Match or starting a new one
+    // within the 350 ms replaces it, and then the timer has nothing to undo.
+    const locked = match;
+    locked.locked = true;
     el.classList.add('miss');
-    match.picked = null;
+    locked.picked = null;
     setTimeout(()=>{
-      match.locked = false;
-      if(match && !match.over) renderMatch();
+      if(match !== locked) return;
+      locked.locked = false;
+      if(!locked.over) renderMatch();
     }, 350);
   }
 }

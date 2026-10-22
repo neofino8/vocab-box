@@ -53,7 +53,7 @@ Answer **Good** and the word moves up a box, so you see it less often. Answer **
 - When a device joins, choose to combine its words with the synced deck or replace them (a backup file is downloaded first), and whether to use the same theme and settings everywhere
 
 **Appearance**
-- Eight color themes
+- Ten color themes (eight dark, two light), plus Auto, which follows your device's light or dark setting
 - Custom background image, custom card color, or a photo on the cards
 
 ## Privacy

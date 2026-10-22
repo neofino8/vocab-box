@@ -66,9 +66,11 @@ The site uses [GoatCounter](https://www.goatcounter.com) for anonymous visit cou
 
 ## Running it yourself
 
-`index.html` is the entire app — no build step, no dependencies. Download it and open it in any browser, or fork this repo and enable GitHub Pages to host your own copy.
+The app is `index.html`, [`styles.css`](styles.css) and the scripts in [`js/`](js/), loaded in a fixed order by plain `<script>` tags — no build step, no dependencies. Fork this repo and enable GitHub Pages to host your own copy. To run it locally, serve the repo folder over http, for example with `python3 -m http.server` in the repo root, and open `http://localhost:8000`; opening `index.html` straight from disk works too, but [`tests/merge-tests.html`](tests/merge-tests.html) needs http.
 
-Sync talks to this project's Supabase backend. To run your own, create a Supabase project, run [`supabase/schema.sql`](supabase/schema.sql) in its SQL editor (and optionally [`supabase/verify.sql`](supabase/verify.sql) to check it), then set `SUPABASE_URL` and `SUPABASE_KEY` in `index.html` to your project's URL and publishable key. [`.github/workflows/supabase-keepalive.yml`](.github/workflows/supabase-keepalive.yml) calls the API every 6 hours so a free project isn't paused for inactivity.
+Every stylesheet and script link in `index.html` carries a stamp, such as `js/sync.js?v=9d4135d2`, taken from the file's contents, so a phone never pairs a new page with a stale cached file. After changing any CSS or JS file, run [`scripts/stamp.sh`](scripts/stamp.sh) to update the stamps; a GitHub Action runs `scripts/stamp.sh --check` on every push and fails if one is out of date.
+
+Sync talks to this project's Supabase backend. To run your own, create a Supabase project, run [`supabase/schema.sql`](supabase/schema.sql) in its SQL editor (and optionally [`supabase/verify.sql`](supabase/verify.sql) to check it), then set `SUPABASE_URL` and `SUPABASE_KEY` in [`js/sync.js`](js/sync.js) to your project's URL and publishable key, and run `scripts/stamp.sh`. [`.github/workflows/supabase-keepalive.yml`](.github/workflows/supabase-keepalive.yml) calls the API every 6 hours so a free project isn't paused for inactivity.
 
 ## Feedback
 

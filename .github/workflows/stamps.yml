@@ -1,0 +1,22 @@
+# index.html links every stylesheet and script with a ?v= stamp taken from the
+# file's contents, so a new page never loads a stale cached file. A forgotten
+# scripts/stamp.sh leaves a stamp pointing at old contents; this fails the push
+# that does it. A workflow rather than a git hook, because a hook has to be
+# installed in every clone and this runs whoever pushes.
+name: Check cache stamps
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  stamps:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check that every stamp matches its file
+        run: sh scripts/stamp.sh --check

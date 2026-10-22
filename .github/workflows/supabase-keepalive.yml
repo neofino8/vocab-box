@@ -2,7 +2,7 @@
 # requests a day to count a project as active. Pinging every three days was not
 # enough and the project was paused on 2026-10-19, so this now runs every six
 # hours. get_deck is a real query, not just an HTTP hit. The publishable key is
-# public by design (it is also in index.html) and can only call the two sync
+# public by design (it is also in js/sync.js) and can only call the two sync
 # functions, so it needs no secret.
 name: Keep Supabase awake
 

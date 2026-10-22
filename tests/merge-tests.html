@@ -60,12 +60,12 @@
 <body>
 <main>
   <h1>Vocab Box merge tests</h1>
-  <p>Scenario tests and a seeded fuzzer for the sync merge. The functions under test are read from
-    <code>../index.html</code> by name and run on their own, so the app itself never starts here and
-    nothing in this browser's saved words or sync is touched.</p>
+  <p>Scenario tests and a seeded fuzzer for the sync merge. The functions under test are read by name
+    from the app's scripts, in the order <code>../index.html</code> loads them, and run on their own,
+    so the app itself never starts here and nothing in this browser's saved words or sync is touched.</p>
   <p>Open this page over http(s), for example on GitHub Pages or with
     <code>python3 -m http.server</code> in the repo root. Browsers don't let a page opened as a
-    <code>file://</code> read the file next to it.</p>
+    <code>file://</code> read the files next to it.</p>
 
   <div class="controls">
     <label>Seed <input id="seed" type="number" value="20261021"></label>
@@ -91,7 +91,8 @@
 /* ---------- Loading the real functions ---------- */
 
 // Everything the merge needs, by name. Each is a top-level `function` or
-// `const` in index.html; a missing one fails the run rather than being stubbed.
+// `const` in one of the app's scripts; a missing one fails the run rather
+// than being stubbed.
 const NEEDED = [
   'DAY', 'TOMBSTONE_TTL', 'DEFAULT_DECK', 'DEFAULT_DECK_NAME', 'DECK_NAME_MAX', 'THEMES',
   'AUTO_THEME', 'isThemeId', 'I18N', 'normWord', 'cardKey', 'DECK_ID_RE', 'deckIdOr',
@@ -110,34 +111,49 @@ function balanced(line){
   return n === 0;
 }
 
-// index.html keeps top-level declarations at column 0, and a multi-line one
+// The scripts keep top-level declarations at column 0, and a multi-line one
 // ends at the first column-0 line that closes it ("}", "};" or "];").
 function extract(lines, name){
   const start = lines.findIndex(l => l.startsWith('function ' + name + '(') || l.startsWith('const ' + name + ' ='));
-  if(start === -1) throw new Error(name + ' was not found in index.html');
+  if(start === -1) throw new Error(name + ' was not found in the app\'s scripts');
   if(balanced(lines[start])) return {start, code: lines[start]};
   for(let i = start + 1; i < lines.length; i++){
     if(/^[}\]];?\s*$/.test(lines[i])) return {start, code: lines.slice(start, i + 1).join('\n')};
   }
-  throw new Error('The end of ' + name + ' was not found in index.html');
+  throw new Error('The end of ' + name + ' was not found in ' + lines.fileOf(start));
 }
 
+async function fetchText(path){
+  const res = await fetch(path, {cache: 'no-store'});
+  if(!res.ok) throw new Error('Could not load ' + path + ' (HTTP ' + res.status + ')');
+  return res.text();
+}
+
+// The app's own scripts, in the order index.html loads them: every
+// <script src> with a relative path, without its ?v= stamp.
 async function loadMerge(){
-  const res = await fetch('../index.html', {cache: 'no-store'});
-  if(!res.ok) throw new Error('Could not load ../index.html (HTTP ' + res.status + ')');
-  const html = await res.text();
-  const lines = html.split('\n');
-  // Declared in the order index.html declares them, so constants that use
+  const html = await fetchText('../index.html');
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const files = [...doc.querySelectorAll('script[src]')].map(s => s.getAttribute('src'))
+    .filter(src => !/^([a-z]+:)?\/\//i.test(src)).map(src => src.split('?')[0]);
+  if(!files.length) throw new Error('index.html loads no local scripts');
+  const texts = await Promise.all(files.map(f => fetchText('../' + f)));
+  // One list of lines across all files, so declaration order is load order.
+  const lines = [], fileAt = [];
+  texts.forEach((text, i) => text.split('\n').forEach(l => { lines.push(l); fileAt.push(files[i]); }));
+  lines.fileOf = i => fileAt[i];
+  // Declared in the order the app declares them, so constants that use
   // other constants (TOMBSTONE_TTL uses DAY) see them defined.
   const blocks = NEEDED.map(n => extract(lines, n)).sort((a, b) => a.start - b.start);
   const body = blocks.map(b => b.code).join('\n') + '\nreturn {' + EXPORTS.join(', ') + '};';
   const api = new Function(body)();
   let hash = '';
   if(window.crypto && crypto.subtle){
-    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(html));
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(texts.join('\n')));
     hash = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 12);
   }
-  return {api, lines: lines.length, hash};
+  const used = [...new Set(blocks.map(b => fileAt[b.start]))];
+  return {api, lines: lines.length, hash, files, used};
 }
 
 /* ---------- Helpers ---------- */
@@ -579,9 +595,10 @@ async function run(){
   window.__results = null;
   await new Promise(r => setTimeout(r, 30));
   try{
-    const {api, lines, hash} = await loadMerge();
-    document.getElementById('source').textContent = 'Loaded ' + NEEDED.length + ' functions and constants from ../index.html ('
-      + lines + ' lines' + (hash ? ', SHA-256 ' + hash + '…' : '') + ').';
+    const {api, lines, hash, files, used} = await loadMerge();
+    document.getElementById('source').textContent = 'Loaded ' + NEEDED.length + ' functions and constants from '
+      + used.join(', ') + ' (of ' + files.length + ' scripts, ' + lines + ' lines'
+      + (hash ? ', SHA-256 ' + hash + '…' : '') + ').';
 
     for(const [name, fn] of scenarios(api)){
       let ok = true, detail = '';

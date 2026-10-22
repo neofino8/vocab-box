@@ -4,3 +4,8 @@
 # carriage return; git strips a trailing CR from .gitignore lines, so the
 # literal name cannot be written here. "Icon?" matches it via the ? wildcard.
 Icon?
+
+# Screenshots and test output never belong in the repo.
+screenshots/
+test-results/
+playwright-report/

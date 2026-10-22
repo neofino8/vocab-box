@@ -236,8 +236,7 @@ h1{
 .drawer{
   flex:1; background:var(--panel); border-radius:6px;
   padding:8px 6px 7px; text-align:center;
-  border-bottom:3px solid var(--accent);
-  transition:background-color .3s ease, border-color .3s ease, filter .15s ease;
+  transition:background-color .3s ease, filter .15s ease;
   cursor:pointer;
 }
 .drawer:hover{ filter:brightness(1.2); }
@@ -247,12 +246,27 @@ h1{
 .drawer .l{
   font-size:10px; color:var(--soft); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px;
 }
+/* One bar for the whole deck: each box gets a share of its width by how many
+   cards it holds, shading up from faint (box 1) to full accent (box 5), so
+   progress shows as the weight moving right. The drawers carry the numbers. */
+.spread{
+  display:flex; height:6px; margin-bottom:12px;
+  background:var(--panel); border-radius:3px; overflow:hidden;
+}
+.spread i{ background:var(--accent); min-width:2px; }
+.spread i + i{ border-left:2px solid var(--panel); }
+.spread .b1{ opacity:.3; }
+.spread .b2{ opacity:.45; }
+.spread .b3{ opacity:.6; }
+.spread .b4{ opacity:.8; }
 .statline{
-  display:flex; justify-content:space-between; align-items:center;
+  display:flex; justify-content:space-between; align-items:baseline;
   font-size:13px; color:var(--soft); margin-bottom:26px;
   text-shadow:0 1px 2px rgba(0,0,0,0.3);
 }
+/* What is due is the number to act on, so it outweighs the card total. */
 .statline .due{ color:var(--accent); font-weight:500; }
+.statline .due-n{ font-family:var(--font-mono); font-size:22px; font-weight:500; line-height:1; }
 .stage{
   position:relative;
   min-height:280px;
@@ -603,6 +617,7 @@ body.landing-on .subtitle,
 body.landing-on .mode-tabs,
 body.landing-on .mode-chips,
 body.landing-on .drawers,
+body.landing-on .spread,
 body.landing-on .statline,
 body.landing-on .stage,
 body.landing-on .toggle-add,
@@ -723,12 +738,15 @@ body.landing-on .theme-panel{ display:none; }
   background:var(--panel); border:1px solid var(--line); border-radius:20px;
 }
 /* The active fill is one indicator behind the codes. JS sizes and places it
-   from the active segment; it never intercepts a tap. */
+   from the active segment; it never intercepts a tap. It is a quiet well, not
+   an accent fill, so it never outweighs the card: darkening the panel keeps
+   the accent code above 4.5:1, where an accent tint would pull it below. */
 .lang-ind{
   position:absolute; top:0; left:0; z-index:0;
-  background:var(--accent); border-radius:16px;
+  background:rgba(0,0,0,0.25); border-radius:16px;
   pointer-events:none; will-change:transform;
 }
+.theme-light .lang-ind{ background:rgba(0,0,0,0.05); }
 .lang-seg{
   position:relative; z-index:1;
   background:transparent; color:var(--soft);
@@ -736,7 +754,7 @@ body.landing-on .theme-panel{ display:none; }
   letter-spacing:.7px; padding:0 7px; border-radius:16px;
 }
 .lang-seg:not(.on):hover{ color:var(--paper); }
-.lang-seg.on{ color:var(--on-accent); }
+.lang-seg.on{ color:var(--accent); }
 @media (prefers-reduced-motion: no-preference){
   .lang-ind[data-ready]{
     transition:transform .25s cubic-bezier(.4,0,.2,1), width .25s cubic-bezier(.4,0,.2,1);

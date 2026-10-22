@@ -38,8 +38,21 @@ function renderStats(){
     d.addEventListener('click', ()=>openBox(i));
     drawers.appendChild(d);
   }
+  // Each box's share of the bar is its share of the cards; an empty box
+  // takes no room.
+  let spread = '';
+  for(let i=1;i<=5;i++){
+    if(counts[i]) spread += '<i class="b'+i+'" style="flex-grow:'+counts[i]+'"></i>';
+  }
+  document.getElementById('spread').innerHTML = spread;
   document.getElementById('totalline').textContent = count('card', mine.length);
-  document.getElementById('dueline').textContent = t('dueToday', {n: dueCards().length});
+  // The number is set apart from the sentence around it, wherever the
+  // language puts it ("20 due today", "bugunga 20").
+  const [before, after] = t('dueToday', {n: '\u0000'}).split('\u0000');
+  const n = document.createElement('span');
+  n.className = 'due-n';
+  n.textContent = dueCards().length;
+  document.getElementById('dueline').replaceChildren(before, n, after);
 }
 
 function frontText(c){ return settings.direction === 'normal' ? c.word : c.translation; }
